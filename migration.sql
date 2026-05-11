@@ -55,7 +55,7 @@ LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT household_id FROM household_members WHERE user_id = auth.uid()
+  SELECT household_id FROM public.household_members WHERE user_id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION is_household_owner(hh_id uuid)
@@ -65,7 +65,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM household_members 
+    SELECT 1 FROM public.household_members 
     WHERE user_id = auth.uid() AND household_id = hh_id AND role = 'owner'
   )
 $$;
@@ -76,7 +76,7 @@ LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT EXISTS (SELECT 1 FROM household_members WHERE household_id = hh_id)
+  SELECT EXISTS (SELECT 1 FROM public.household_members WHERE household_id = hh_id)
 $$;
 
 -- ============================================
