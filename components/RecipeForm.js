@@ -10,7 +10,7 @@ const PROTEIN_TYPES = ['meat', 'fish', 'vegetarian', 'vegan', 'any']
 const EFFORT_LEVELS = ['low', 'medium', 'high']
 
 export default function RecipeForm() {
-  const { user } = useAuth()
+  const { user, household } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('id')
@@ -31,13 +31,13 @@ export default function RecipeForm() {
   const [ingredients, setIngredients] = useState([{ name: '', amount: 0, unit: '' }])
 
   useEffect(() => {
-    if (!editId || !user) return
+    if (!editId || !user || !household) return
     async function loadRecipe() {
       const { data: recipe } = await supabase
         .from('recipes')
         .select('*')
         .eq('id', editId)
-        .eq('user_id', user.id)
+        .eq('household_id', household.id)
         .single()
       if (!recipe) return
 
@@ -108,6 +108,7 @@ export default function RecipeForm() {
     try {
       const recipePayload = {
         user_id: user.id,
+        household_id: household.id,
         title: form.title,
         instructions: form.instructions,
         prep_time_min: form.prepTime ? parseInt(form.prepTime) : null,
@@ -144,14 +145,14 @@ export default function RecipeForm() {
           .from('ingredients')
           .select('id, name')
           .in('name', names)
-          .eq('user_id', user.id)
+          .eq('household_id', household.id)
 
         const existingMap = {}
         if (existing) existing.forEach((i) => { existingMap[i.name] = i.id })
 
         const missingNames = names.filter((n) => !existingMap[n])
         if (missingNames.length > 0) {
-          const inserts = missingNames.map((name) => ({ name, user_id: user.id }))
+          const inserts = missingNames.map((name) => ({ name, user_id: user.id, household_id: household.id }))
           const { data: created } = await supabase
             .from('ingredients')
             .insert(inserts)

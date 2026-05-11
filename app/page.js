@@ -18,7 +18,7 @@ function getWeekMonday() {
 }
 
 export default function Home() {
-  const { user } = useAuth()
+  const { user, household } = useAuth()
   const [preferences, setPreferences] = useState(null)
   const [currentPlan, setCurrentPlan] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -26,6 +26,7 @@ export default function Home() {
   const [error, setError] = useState('')
 
   const initDashboard = async () => {
+    if (!household) return
     setLoading(true)
     setError('')
 
@@ -33,48 +34,26 @@ export default function Home() {
       .from('preferences')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!pref) {
-      const { data: newPref, error: prefError } = await supabase
-        .from('preferences')
-        .insert({
-          user_id: user.id,
-          meals_per_week: 7,
-          meat_days: 2,
-          fish_days: 1,
-          vegetarian_days: 2,
-          vegan_days: 0,
-          servings_default: 2,
-        })
-        .select()
-        .single()
-      if (prefError) {
-        setError('Failed to create preferences: ' + prefError.message)
-        setLoading(false)
-        return
-      }
-      setPreferences(newPref)
-    } else {
-      setPreferences(pref)
-    }
+    setPreferences(pref)
 
     const weekStart = getWeekMonday()
     const { data: plan } = await supabase
       .from('weekly_plans')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('household_id', household.id)
       .eq('week_start_date', weekStart)
-      .single()
+      .maybeSingle()
 
     setCurrentPlan(plan)
     setLoading(false)
   }
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !household) return
     initDashboard()
-  }, [user])
+  }, [user, household])
 
   const generatePlan = async () => {
     setGenerating(true)
@@ -95,7 +74,7 @@ export default function Home() {
         setError(data.error || 'Failed to generate plan')
         return
       }
-      setCurrentPlan(data.plan || { id: data.plan?.id, week_start_date: weekStart })
+      setCurrentPlan(data.plan ? { id: data.plan.id, week_start_date: weekStart } : null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -152,11 +131,13 @@ export default function Home() {
           <div className="bg-white border rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Your Preferences</h3>
             <div className="text-xs text-gray-500 grid grid-cols-2 gap-1">
+              <span>Meals per day: {preferences.meals_per_day || 1}</span>
+              <span>Plan days: {preferences.plan_days || 7}</span>
               <span>Meat: {preferences.meat_days} days</span>
               <span>Fish: {preferences.fish_days} days</span>
               <span>Vegetarian: {preferences.vegetarian_days} days</span>
               <span>Vegan: {preferences.vegan_days} days</span>
-              <span>Default servings: {preferences.servings_default}</span>
+              <span>Serves: {preferences.servings_default} people</span>
             </div>
           </div>
         )}

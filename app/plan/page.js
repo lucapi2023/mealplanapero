@@ -18,7 +18,7 @@ function getWeekMonday() {
 }
 
 export default function PlanPage() {
-  const { user } = useAuth()
+  const { user, household } = useAuth()
   const [currentPlan, setCurrentPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -26,10 +26,11 @@ export default function PlanPage() {
   const [nextWeek, setNextWeek] = useState(false)
 
   const loadPlan = async (weekStart) => {
+    if (!household) return
     const { data: plan } = await supabase
       .from('weekly_plans')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('household_id', household.id)
       .eq('week_start_date', weekStart)
       .single()
     setCurrentPlan(plan)
@@ -37,9 +38,9 @@ export default function PlanPage() {
   }
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !household) return
     loadPlan(getWeekMonday())
-  }, [user])
+  }, [user, household])
 
   const generatePlan = async () => {
     setGenerating(true)

@@ -5,7 +5,7 @@ import { supabase } from '@/utils/supabaseClient'
 import { useAuth } from './AuthProvider'
 
 export default function IngredientAutocomplete({ value, onChange, placeholder }) {
-  const { user } = useAuth()
+  const { user, household } = useAuth()
   const [query, setQuery] = useState(value || '')
   const [suggestions, setSuggestions] = useState([])
   const [isOpen, setIsOpen] = useState(false)
@@ -35,7 +35,7 @@ export default function IngredientAutocomplete({ value, onChange, placeholder })
         .from('ingredients')
         .select('name')
         .ilike('name', `%${query}%`)
-        .eq('user_id', user.id)
+        .eq('household_id', household.id)
         .limit(5)
       if (data) {
         setSuggestions(data.map((d) => d.name))

@@ -27,6 +27,17 @@ export async function POST(req) {
     const body = await req.json()
     const { planId, mealId, proteinType } = body
 
+    const { data: pref } = await supabase
+      .from('preferences')
+      .select('household_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const householdId = pref?.household_id
+    if (!householdId) {
+      return Response.json({ error: 'No household found' }, { status: 400 })
+    }
+
     if (!planId || !mealId) {
       return Response.json({ error: 'Missing planId or mealId' }, { status: 400 })
     }
@@ -46,7 +57,7 @@ export async function POST(req) {
     let query = supabase
       .from('recipes')
       .select('id, title, servings_base')
-      .eq('user_id', user.id)
+      .eq('household_id', householdId)
       .eq('is_core', true)
       .eq('protein_type', proteinType || 'any')
 
@@ -60,7 +71,7 @@ export async function POST(req) {
       let fallbackQuery = supabase
         .from('recipes')
         .select('id, title, servings_base')
-        .eq('user_id', user.id)
+        .eq('household_id', householdId)
 
       if (usedIds.size > 0) {
         fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedIds))

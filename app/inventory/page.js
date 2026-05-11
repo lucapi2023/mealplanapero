@@ -8,22 +8,22 @@ import Layout from '@/components/Layout'
 import IngredientAutocomplete from '@/components/IngredientAutocomplete'
 
 export default function InventoryPage() {
-  const { user } = useAuth()
+  const { user, household } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [newItem, setNewItem] = useState({ name: '', quantity: 0, unit: '' })
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !household) return
     loadInventory()
-  }, [user])
+  }, [user, household])
 
   const loadInventory = async () => {
     const { data } = await supabase
       .from('inventory')
       .select('id, quantity, unit, ingredients(name, id)')
-      .eq('user_id', user.id)
+      .eq('household_id', household.id)
       .order('created_at', { ascending: false })
 
     if (data) {
@@ -47,7 +47,7 @@ export default function InventoryPage() {
       .from('ingredients')
       .select('id')
       .eq('name', newItem.name.trim())
-      .eq('user_id', user.id)
+      .eq('household_id', household.id)
       .single()
 
     if (existing) {
@@ -55,7 +55,7 @@ export default function InventoryPage() {
     } else {
       const { data: created } = await supabase
         .from('ingredients')
-        .insert({ name: newItem.name.trim(), user_id: user.id })
+        .insert({ name: newItem.name.trim(), user_id: user.id, household_id: household.id })
         .select('id')
         .single()
       ingredientId = created?.id
@@ -72,6 +72,7 @@ export default function InventoryPage() {
     } else {
       await supabase.from('inventory').insert({
         user_id: user.id,
+        household_id: household.id,
         ingredient_id: ingredientId,
         quantity: newItem.quantity,
         unit: newItem.unit,

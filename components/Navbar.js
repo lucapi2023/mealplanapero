@@ -31,6 +31,9 @@ export default function Navbar() {
           <Link href="/inventory" className="text-sm text-gray-600 hover:text-gray-900">
             Inventory
           </Link>
+          <Link href="/shopping" className="text-sm text-gray-600 hover:text-gray-900">
+            Shopping List
+          </Link>
           <Link href="/settings" className="text-sm text-gray-600 hover:text-gray-900">
             Settings
           </Link>

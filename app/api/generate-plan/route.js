@@ -45,6 +45,11 @@ export async function POST(req) {
       return Response.json({ error: 'Preferences not set' }, { status: 400 })
     }
 
+    const householdId = pref.household_id
+    if (!householdId) {
+      return Response.json({ error: 'No household assigned' }, { status: 400 })
+    }
+
     const {
       meals_per_week,
       meat_days,
@@ -75,7 +80,7 @@ export async function POST(req) {
     const { data: existingPlan } = await supabase
       .from('weekly_plans')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('household_id', householdId)
       .eq('week_start_date', weekStartDate)
       .maybeSingle()
 
@@ -110,7 +115,7 @@ export async function POST(req) {
       let query = supabase
         .from('recipes')
         .select('id, title, servings_base')
-        .eq('user_id', user.id)
+        .eq('household_id', householdId)
         .eq('protein_type', protein)
         .eq('is_core', true)
 
@@ -124,7 +129,7 @@ export async function POST(req) {
         let fallbackQuery = supabase
           .from('recipes')
           .select('id, title, servings_base')
-          .eq('user_id', user.id)
+          .eq('household_id', householdId)
           .eq('protein_type', protein)
 
         if (usedRecipeIds.size > 0) {
@@ -138,7 +143,7 @@ export async function POST(req) {
           let anyQuery = supabase
             .from('recipes')
             .select('id, title, servings_base')
-            .eq('user_id', user.id)
+            .eq('household_id', householdId)
 
           if (usedRecipeIds.size > 0) {
             anyQuery = anyQuery.not('id', 'in', Array.from(usedRecipeIds))
@@ -173,6 +178,7 @@ export async function POST(req) {
       .from('weekly_plans')
       .insert({
         user_id: user.id,
+        household_id: householdId,
         week_start_date: weekStartDate,
       })
       .select()
