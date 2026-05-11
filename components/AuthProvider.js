@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
   const [members, setMembers] = useState([])
   const [invites, setInvites] = useState([])
 
-  const ensureHousehold = async (supabase, uid) => {
+  const ensureHousehold = async (supabase, uid, email) => {
     const { data: pref } = await supabase
       .from('preferences')
       .select('household_id')
@@ -25,13 +25,11 @@ export function AuthProvider({ children }) {
 
     if (pref?.household_id) return pref.household_id
 
-    const userEmail = (await supabase.auth.getUser()).data.user?.email
-
-    if (userEmail) {
+    if (email) {
       const { data: pendingInvite } = await supabase
         .from('invites')
         .select('*')
-        .eq('email', userEmail)
+        .eq('email', email)
         .eq('status', 'pending')
         .maybeSingle()
 
@@ -101,23 +99,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = await getClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const supabaseClient = await getClient()
+      const { data: { session } } = await supabaseClient.auth.getSession()
       const currentUser = session?.user ?? null
       setUser(currentUser)
 
       if (currentUser) {
-        const hhId = await ensureHousehold(supabase, currentUser.id)
-        if (hhId) await loadHouseholdData(supabase, hhId)
+        const hhId = await ensureHousehold(supabaseClient, currentUser.id, currentUser.email)
+        if (hhId) await loadHouseholdData(supabaseClient, hhId)
       }
       setLoading(false)
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         const newUser = session?.user ?? null
         setUser(newUser)
         if (newUser) {
-          const hhId = await ensureHousehold(supabase, newUser.id)
-          if (hhId) await loadHouseholdData(supabase, hhId)
+          const hhId = await ensureHousehold(supabaseClient, newUser.id, newUser.email)
+          if (hhId) await loadHouseholdData(supabaseClient, hhId)
         } else {
           setHousehold(null)
           setMembers([])
@@ -130,28 +128,28 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signIn = async (email, password) => {
-    const supabase = await getClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const supabaseClient = await getClient()
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password })
     if (error) throw error
     return data
   }
 
   const signOut = async () => {
-    const supabase = await getClient()
-    await supabase.auth.signOut()
+    const supabaseClient = await getClient()
+    await supabaseClient.auth.signOut()
   }
 
   const signUp = async (email, password) => {
-    const supabase = await getClient()
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const supabaseClient = await getClient()
+    const { data, error } = await supabaseClient.auth.signUp({ email, password })
     if (error) throw error
     return data
   }
 
   const inviteMember = async (email) => {
     if (!household) throw new Error('No household')
-    const supabase = await getClient()
-    const { data, error } = await supabase
+    const supabaseClient = await getClient()
+    const { data, error } = await supabaseClient
       .from('invites')
       .insert({ household_id: household.id, email, invited_by: user.id })
       .select()
@@ -162,15 +160,15 @@ export function AuthProvider({ children }) {
   }
 
   const cancelInvite = async (inviteId) => {
-    const supabase = await getClient()
-    await supabase.from('invites').delete().eq('id', inviteId)
+    const supabaseClient = await getClient()
+    await supabaseClient.from('invites').delete().eq('id', inviteId)
     setInvites((prev) => prev.filter((i) => i.id !== inviteId))
   }
 
   const refreshHousehold = async () => {
     if (!household) return
-    const supabase = await getClient()
-    await loadHouseholdData(supabase, household.id)
+    const supabaseClient = await getClient()
+    await loadHouseholdData(supabaseClient, household.id)
   }
 
   return (

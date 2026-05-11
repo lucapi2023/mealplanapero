@@ -77,7 +77,7 @@ export default function RecipeForm() {
       }
     }
     loadRecipe()
-  }, [editId, user])
+  }, [editId, user, household])
 
   const handleChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -102,6 +102,7 @@ export default function RecipeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!household) return
     setSaving(true)
     setError('')
 
