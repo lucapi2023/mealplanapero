@@ -87,7 +87,7 @@ export default function Home() {
       <AuthGuard>
         <Layout>
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#3ECF8E' }}></div>
           </div>
         </Layout>
       </AuthGuard>
@@ -97,16 +97,17 @@ export default function Home() {
   return (
     <AuthGuard>
       <Layout>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-2" style={{ color: '#fff' }}>Dashboard</h1>
+        <p className="text-sm mb-8" style={{ color: '#666' }}>Your weekly meal plan at a glance</p>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded px-4 py-3 text-sm mb-4">
+          <div className="rounded-md px-4 py-3 text-sm mb-6" style={{ background: 'rgba(239,68,68,0.1)', color: '#FCA5A5' }}>
             {error}
           </div>
         )}
 
-        <div className="bg-white border rounded-lg p-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">This Week&apos;s Plan</h2>
+        <div className="card mb-8">
+          <h2 className="text-base font-semibold mb-4" style={{ color: '#fff' }}>This Week&apos;s Plan</h2>
           {currentPlan ? (
             <WeeklyPlanDisplay
               planId={currentPlan.id}
@@ -114,30 +115,30 @@ export default function Home() {
               onRefresh={initDashboard}
             />
           ) : (
-            <div className="text-center py-6">
-              <p className="text-gray-500 mb-4">No meal plan for this week yet.</p>
+            <div className="text-center py-10">
+              <p className="text-sm mb-4" style={{ color: '#666' }}>No meal plan for this week yet.</p>
               <button
                 onClick={generatePlan}
                 disabled={generating}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                className="btn-primary px-8 py-3 text-base"
               >
-                {generating ? 'Generating...' : 'Generate This Week\'s Plan'}
+                {generating ? 'Generating...' : "Generate This Week's Plan"}
               </button>
             </div>
           )}
         </div>
 
         {preferences && (
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Your Preferences</h3>
-            <div className="text-xs text-gray-500 grid grid-cols-2 gap-1">
-              <span>Meals per day: {preferences.meals_per_day || 1}</span>
-              <span>Plan days: {preferences.plan_days || 7}</span>
-              <span>Meat: {preferences.meat_days} days</span>
-              <span>Fish: {preferences.fish_days} days</span>
-              <span>Vegetarian: {preferences.vegetarian_days} days</span>
-              <span>Vegan: {preferences.vegan_days} days</span>
-              <span>Serves: {preferences.servings_default} people</span>
+          <div className="card">
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#fff' }}>Your Preferences</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm" style={{ color: '#929292' }}>
+              <span>{preferences.meals_per_day || 1} meal{preferences.meals_per_day > 1 ? 's' : ''}/day</span>
+              <span>{preferences.plan_days || 7} days/week</span>
+              <span>Meat: {preferences.meat_days}</span>
+              <span>Fish: {preferences.fish_days}</span>
+              <span>Vegetarian: {preferences.vegetarian_days}</span>
+              <span>Vegan: {preferences.vegan_days}</span>
+              <span>Serves: {preferences.servings_default}</span>
             </div>
           </div>
         )}

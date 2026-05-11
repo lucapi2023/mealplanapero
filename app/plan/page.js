@@ -23,7 +23,6 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
-  const [nextWeek, setNextWeek] = useState(false)
 
   const loadPlan = async (weekStart) => {
     if (!household) return
@@ -32,7 +31,7 @@ export default function PlanPage() {
       .select('*')
       .eq('household_id', household.id)
       .eq('week_start_date', weekStart)
-      .single()
+      .maybeSingle()
     setCurrentPlan(plan)
     setLoading(false)
   }
@@ -47,14 +46,7 @@ export default function PlanPage() {
     setError('')
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token
-      const weekStart = nextWeek
-        ? (() => {
-            const m = new Date(getWeekMonday())
-            m.setDate(m.getDate() + 7)
-            return m.toISOString().slice(0, 10)
-          })()
-        : getWeekMonday()
-
+      const weekStart = getWeekMonday()
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: {
@@ -90,7 +82,7 @@ export default function PlanPage() {
       <AuthGuard>
         <Layout>
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#3ECF8E' }}></div>
           </div>
         </Layout>
       </AuthGuard>
@@ -100,21 +92,22 @@ export default function PlanPage() {
   return (
     <AuthGuard>
       <Layout>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Weekly Meal Plan</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={handleRegenerate}
-              disabled={generating}
-              className="bg-orange-500 text-white px-4 py-2 rounded text-sm font-medium hover:bg-orange-600 disabled:opacity-50"
-            >
-              {generating ? 'Generating...' : 'Regenerate Full Week'}
-            </button>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#fff' }}>Meal Plan</h1>
+            <p className="text-sm mt-1" style={{ color: '#666' }}>Weekly meal schedule</p>
           </div>
+          <button
+            onClick={handleRegenerate}
+            disabled={generating}
+            className="btn-primary"
+          >
+            {generating ? 'Generating...' : currentPlan ? 'Regenerate Week' : 'Generate Plan'}
+          </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded px-4 py-3 text-sm mb-4">
+          <div className="rounded-md px-4 py-3 text-sm mb-6" style={{ background: 'rgba(239,68,68,0.1)', color: '#FCA5A5' }}>
             {error}
           </div>
         )}
@@ -126,13 +119,9 @@ export default function PlanPage() {
             onRefresh={() => loadPlan(currentPlan.week_start_date)}
           />
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No meal plan generated yet.</p>
-            <button
-              onClick={generatePlan}
-              disabled={generating}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
+          <div className="text-center py-16">
+            <p className="text-sm mb-4" style={{ color: '#666' }}>No meal plan generated yet.</p>
+            <button onClick={generatePlan} disabled={generating} className="btn-primary px-8 py-3 text-base">
               {generating ? 'Generating...' : 'Generate Plan'}
             </button>
           </div>

@@ -36,10 +36,7 @@ export default function ShoppingPage() {
       .eq('week_start_date', weekStart)
       .maybeSingle()
 
-    if (!plan) {
-      setLoading(false)
-      return
-    }
+    if (!plan) { setLoading(false); return }
 
     const { data: meals } = await supabase
       .from('plan_meals')
@@ -47,10 +44,7 @@ export default function ShoppingPage() {
       .eq('plan_id', plan.id)
       .order('day_of_week')
 
-    if (!meals || meals.length === 0) {
-      setLoading(false)
-      return
-    }
+    if (!meals || meals.length === 0) { setLoading(false); return }
 
     const mealIds = meals.filter((m) => m.recipe_id).map((m) => m.id)
     const { data: riData } = await supabase
@@ -79,14 +73,13 @@ export default function ShoppingPage() {
   return (
     <AuthGuard>
       <Layout>
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Shopping List</h1>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold" style={{ color: '#fff' }}>Shopping List</h1>
+          <p className="text-sm mt-1" style={{ color: '#666' }}>Aggregated ingredients from your weekly plan</p>
+        </div>
 
         {loading ? (
-          <div className="text-center text-gray-500 py-8">Loading...</div>
-        ) : ingredients.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No meal plan for this week. Generate a plan first from the Dashboard or Plan page.
-          </div>
+          <div className="text-center py-10" style={{ color: '#666' }}>Loading...</div>
         ) : (
           <GroceryList ingredients={ingredients} onClose={() => {}} />
         )}

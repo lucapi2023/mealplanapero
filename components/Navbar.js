@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from './AuthProvider'
 
 export default function Navbar() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, household } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   if (!user) return null
 
@@ -15,36 +16,62 @@ export default function Navbar() {
     router.push('/login')
   }
 
+  const links = [
+    { href: '/', label: 'Dashboard', icon: '◷' },
+    { href: '/recipes', label: 'Recipes', icon: '📋' },
+    { href: '/plan', label: 'Meal Plan', icon: '📅' },
+    { href: '/shopping', label: 'Shopping List', icon: '🛒' },
+    { href: '/inventory', label: 'Inventory', icon: '📦' },
+    { href: '/settings', label: 'Settings', icon: '⚙' },
+  ]
+
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="font-bold text-lg text-blue-700">
-            MealPlan
-          </Link>
-          <Link href="/recipes" className="text-sm text-gray-600 hover:text-gray-900">
-            Recipes
-          </Link>
-          <Link href="/plan" className="text-sm text-gray-600 hover:text-gray-900">
-            Plan
-          </Link>
-          <Link href="/inventory" className="text-sm text-gray-600 hover:text-gray-900">
-            Inventory
-          </Link>
-          <Link href="/shopping" className="text-sm text-gray-600 hover:text-gray-900">
-            Shopping List
-          </Link>
-          <Link href="/settings" className="text-sm text-gray-600 hover:text-gray-900">
-            Settings
-          </Link>
-        </div>
+    <aside className="fixed left-0 top-0 h-full w-56 flex flex-col border-r" style={{ background: '#0B0D0E', borderColor: '#2A2A2A' }}>
+      {/* Logo */}
+      <div className="px-5 py-5 border-b" style={{ borderColor: '#2A2A2A' }}>
+        <Link href="/" className="flex items-center gap-2">
+          <span className="w-7 h-7 rounded flex items-center justify-center text-sm font-bold" style={{ background: '#3ECF8E', color: '#000' }}>
+            M
+          </span>
+          <span className="font-bold text-base" style={{ color: '#fff' }}>MealPlan</span>
+        </Link>
+      </div>
+
+      {/* Navigation links */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        {links.map((link) => {
+          const isActive = pathname === link.href
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                isActive
+                  ? ''
+                  : 'hover:bg-[#1A1A1A]'
+              }`}
+              style={{
+                color: isActive ? '#fff' : '#929292',
+                background: isActive ? '#1A1A1A' : 'transparent',
+              }}
+            >
+              <span className="text-base">{link.icon}</span>
+              {link.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-5 py-4 border-t" style={{ borderColor: '#2A2A2A' }}>
         <button
           onClick={handleSignOut}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-[#1A1A1A] transition-colors"
+          style={{ color: '#929292' }}
         >
-          Logout
+          Log out
         </button>
       </div>
-    </nav>
+    </aside>
   )
 }

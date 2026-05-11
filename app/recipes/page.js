@@ -7,6 +7,14 @@ import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import Layout from '@/components/Layout'
 
+const PROTEIN_COLORS = {
+  meat: 'rgba(239,68,68,0.15)',
+  fish: 'rgba(59,130,246,0.15)',
+  vegetarian: 'rgba(34,197,94,0.15)',
+  vegan: 'rgba(16,185,129,0.15)',
+  any: 'rgba(107,114,128,0.15)',
+}
+
 export default function RecipesPage() {
   const { user, household } = useAuth()
   const [recipes, setRecipes] = useState([])
@@ -33,7 +41,7 @@ export default function RecipesPage() {
 
   const handleExportCSV = () => {
     if (recipes.length === 0) return
-    const headers = ['Title', 'Protein Type', 'Effort', 'Prep (min)', 'Cook (min)', 'Servings Base', 'Core', 'Instructions', 'Tags']
+    const headers = ['Title', 'Protein Type', 'Effort', 'Prep (min)', 'Cook (min)', 'Servings Base', 'Core', 'Instructions']
     const rows = recipes.map((r) => [
       r.title,
       r.protein_type,
@@ -60,15 +68,12 @@ export default function RecipesPage() {
     const text = await file.text()
     const lines = text.split('\n').filter((l) => l.trim())
     if (lines.length < 2) return alert('CSV must have a header row and at least one recipe.')
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase())
-
     let imported = 0
     for (let i = 1; i < lines.length; i++) {
       const cols = parseCSVLine(lines[i])
       if (cols.length < 5) continue
       const title = cols[0]?.trim()
       if (!title) continue
-
       const recipePayload = {
         user_id: user.id,
         household_id: household.id,
@@ -84,7 +89,6 @@ export default function RecipesPage() {
       const { error } = await supabase.from('recipes').insert(recipePayload)
       if (!error) imported++
     }
-
     alert(`Imported ${imported} recipe(s).`)
     const { data } = await supabase
       .from('recipes')
@@ -98,23 +102,19 @@ export default function RecipesPage() {
   return (
     <AuthGuard>
       <Layout>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Recipes</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#fff' }}>Recipes</h1>
+            <p className="text-sm mt-1" style={{ color: '#666' }}>Manage your recipe collection</p>
+          </div>
           <div className="flex gap-2 flex-wrap">
-            <Link
-              href="/recipes/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700"
-            >
+            <Link href="/recipes/new" className="btn-primary">
               + New Recipe
             </Link>
-            <button
-              onClick={handleExportCSV}
-              disabled={recipes.length === 0}
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-50"
-            >
+            <button onClick={handleExportCSV} disabled={recipes.length === 0} className="btn-secondary">
               Export CSV
             </button>
-            <label className="border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 cursor-pointer">
+            <label className="btn-secondary cursor-pointer">
               Import CSV
               <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
             </label>
@@ -122,65 +122,44 @@ export default function RecipesPage() {
         </div>
 
         {loading ? (
-          <div className="text-center text-gray-500 py-8">Loading...</div>
+          <div className="text-center py-10" style={{ color: '#666' }}>Loading...</div>
         ) : recipes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No recipes yet. Add your first recipe!</p>
-            <Link href="/recipes/new" className="text-blue-600 hover:text-blue-800 text-sm">
+          <div className="text-center py-16">
+            <p className="text-sm mb-4" style={{ color: '#666' }}>No recipes yet. Add your first recipe!</p>
+            <Link href="/recipes/new" className="btn-primary inline-block">
               Create a recipe
             </Link>
           </div>
         ) : (
           <div className="space-y-3">
             {recipes.map((recipe) => (
-              <div
-                key={recipe.id}
-                className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
+              <div key={recipe.id} className="card hover:border-[#3A3A3A] transition-colors">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-medium text-gray-900">
+                      <h3 className="text-sm font-medium truncate" style={{ color: '#fff' }}>
                         {recipe.title}
                       </h3>
                       {recipe.is_core && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                        <span className="badge" style={{ background: 'rgba(62,207,142,0.15)', color: '#6EE7B7' }}>
                           core
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                      <span className={`px-1.5 py-0.5 rounded ${
-                        recipe.protein_type === 'meat' ? 'bg-red-50 text-red-600' :
-                        recipe.protein_type === 'fish' ? 'bg-blue-50 text-blue-600' :
-                        recipe.protein_type === 'vegetarian' ? 'bg-green-50 text-green-600' :
-                        recipe.protein_type === 'vegan' ? 'bg-emerald-50 text-emerald-600' :
-                        'bg-gray-50 text-gray-600'
-                      }`}>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs" style={{ color: '#666' }}>
+                      <span className="badge" style={{ background: PROTEIN_COLORS[recipe.protein_type] || PROTEIN_COLORS.any, color: recipe.protein_type === 'meat' ? '#FCA5A5' : recipe.protein_type === 'fish' ? '#93C5FD' : recipe.protein_type === 'vegetarian' ? '#86EFAC' : recipe.protein_type === 'vegan' ? '#6EE7B7' : '#9CA3AF' }}>
                         {recipe.protein_type}
                       </span>
-                      {recipe.effort_level && (
-                        <span>Effort: {recipe.effort_level}</span>
-                      )}
-                      {recipe.servings_base && (
-                        <span>Base: {recipe.servings_base} serving{recipe.servings_base > 1 ? 's' : ''}</span>
-                      )}
-                      {recipe.total_time_min && (
-                        <span>{recipe.total_time_min} min</span>
-                      )}
+                      {recipe.effort_level && <span>{recipe.effort_level}</span>}
+                      {recipe.total_time_min && <span>{recipe.total_time_min} min</span>}
+                      {recipe.servings_base && <span>serves {recipe.servings_base}</span>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Link
-                      href={`/recipes/new?id=${recipe.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
+                  <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                    <Link href={`/recipes/new?id=${recipe.id}`} className="text-xs font-medium hover:underline" style={{ color: '#929292' }}>
                       Edit
                     </Link>
-                    <button
-                      onClick={() => handleDelete(recipe.id)}
-                      className="text-sm text-red-500 hover:text-red-700"
-                    >
+                    <button onClick={() => handleDelete(recipe.id)} className="text-xs font-medium hover:underline" style={{ color: '#FCA5A5' }}>
                       Delete
                     </button>
                   </div>
@@ -202,23 +181,12 @@ function parseCSVLine(line) {
     const ch = line[i]
     if (inQuotes) {
       if (ch === '"') {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"'
-          i++
-        } else {
-          inQuotes = false
-        }
-      } else {
-        current += ch
-      }
-    } else if (ch === '"') {
-      inQuotes = true
-    } else if (ch === ',') {
-      result.push(current)
-      current = ''
-    } else {
-      current += ch
-    }
+        if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++ }
+        else inQuotes = false
+      } else current += ch
+    } else if (ch === '"') inQuotes = true
+    else if (ch === ',') { result.push(current); current = '' }
+    else current += ch
   }
   result.push(current)
   return result

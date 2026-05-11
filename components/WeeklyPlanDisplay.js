@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/utils/supabaseClient'
-import { useAuth } from './AuthProvider'
 import GroceryList from './GroceryList'
 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+const PROTEIN_STYLES = {
+  meat: { bg: 'rgba(239,68,68,0.15)', color: '#FCA5A5' },
+  fish: { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD' },
+  vegetarian: { bg: 'rgba(34,197,94,0.15)', color: '#86EFAC' },
+  vegan: { bg: 'rgba(16,185,129,0.15)', color: '#6EE7B7' },
+  any: { bg: 'rgba(107,114,128,0.15)', color: '#9CA3AF' },
+}
 
 async function fetchMealsWithIngredients(planId) {
   const { data: meals } = await supabase
@@ -13,10 +20,11 @@ async function fetchMealsWithIngredients(planId) {
     .select('*, recipes(id, title, servings_base, protein_type, effort_level)')
     .eq('plan_id', planId)
     .order('day_of_week')
-
   if (!meals) return []
 
-  const mealIds = meals.filter((m) => m.recipe_id).map((m) => m.id)
+  const mealIds = meals.filter(m => m.recipe_id).map(m => m.id)
+  if (mealIds.length === 0) return meals.map(m => ({ ...m, ingredients: [] }))
+
   const { data: riData } = await supabase
     .from('recipe_ingredients')
     .select('plan_meals!inner(id), ingredient_id, amount, unit, ingredients(name)')
@@ -28,22 +36,14 @@ async function fetchMealsWithIngredients(planId) {
       const mid = ri.plan_meals?.id
       if (!mid) continue
       if (!mealIngredientsMap[mid]) mealIngredientsMap[mid] = []
-      mealIngredientsMap[mid].push({
-        name: ri.ingredients?.name || 'Unknown',
-        amount: ri.amount,
-        unit: ri.unit,
-      })
+      mealIngredientsMap[mid].push({ name: ri.ingredients?.name || 'Unknown', amount: ri.amount, unit: ri.unit })
     }
   }
 
-  return meals.map((m) => ({
-    ...m,
-    ingredients: mealIngredientsMap[m.id] || [],
-  }))
+  return meals.map(m => ({ ...m, ingredients: mealIngredientsMap[m.id] || [] }))
 }
 
 export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) {
-  const { user } = useAuth()
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
   const [swappingId, setSwappingId] = useState(null)
@@ -56,66 +56,40 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (planId) loadMeals()
-  }, [planId])
+  useEffect(() => { if (planId) loadMeals() }, [planId])
 
   const handleSwap = async (mealId) => {
     setSwappingId(mealId)
     try {
-      const meal = meals.find((m) => m.id === mealId)
+      const meal = meals.find(m => m.id === mealId)
       if (!meal || !meal.recipes) return
-
       const token = (await supabase.auth.getSession()).data.session?.access_token
       const res = await fetch('/api/swap-meal', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          planId,
-          mealId,
-          proteinType: meal.recipes.protein_type,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ planId, mealId, proteinType: meal.recipes.protein_type }),
       })
-      if (res.ok) {
-        await loadMeals()
-        if (onRefresh) onRefresh()
-      }
-    } catch (err) {
-      console.error('Swap failed:', err)
-    } finally {
-      setSwappingId(null)
-    }
+      if (res.ok) { await loadMeals(); if (onRefresh) onRefresh() }
+    } catch (err) { console.error('Swap failed:', err) }
+    finally { setSwappingId(null) }
   }
 
   const getScaledIngredients = (meal) => {
     if (!meal.recipes) return []
     const scale = meal.servings / (meal.recipes.servings_base || 1)
-    return meal.ingredients.map((ing) => ({
-      ...ing,
-      amount: Math.round((ing.amount * scale) * 100) / 100,
-    }))
+    return meal.ingredients.map(ing => ({ ...ing, amount: Math.round(ing.amount * scale * 100) / 100 }))
   }
 
-  if (loading) {
-    return <div className="text-center text-gray-500 py-8">Loading plan...</div>
-  }
-
-  if (meals.length === 0) {
-    return <div className="text-center text-gray-500 py-8">No meals planned for this week.</div>
-  }
+  if (loading) return <div className="text-center py-8" style={{ color: '#666' }}>Loading plan...</div>
+  if (meals.length === 0) return <div className="text-center py-8" style={{ color: '#666' }}>No meals planned for this week.</div>
 
   const aggregatedIngredients = {}
-  meals.forEach((meal) => {
+  meals.forEach(meal => {
     if (!meal.recipes) return
     const scale = meal.servings / (meal.recipes.servings_base || 1)
-    meal.ingredients.forEach((ing) => {
+    meal.ingredients.forEach(ing => {
       const key = `${ing.name}|||${ing.unit}`
-      if (!aggregatedIngredients[key]) {
-        aggregatedIngredients[key] = { name: ing.name, unit: ing.unit, amount: 0 }
-      }
+      if (!aggregatedIngredients[key]) aggregatedIngredients[key] = { name: ing.name, unit: ing.unit, amount: 0 }
       aggregatedIngredients[key].amount += ing.amount * scale
     })
   })
@@ -123,82 +97,52 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowGrocery(!showGrocery)}
-          className="text-sm bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
+        <button onClick={() => setShowGrocery(!showGrocery)} className="btn-primary">
           {showGrocery ? 'Hide Grocery List' : 'Grocery List'}
         </button>
       </div>
 
-      {showGrocery && (
-        <GroceryList
-          ingredients={Object.values(aggregatedIngredients)}
-          onClose={() => setShowGrocery(false)}
-        />
-      )}
+      {showGrocery && <GroceryList ingredients={Object.values(aggregatedIngredients)} onClose={() => setShowGrocery(false)} />}
 
       <div className="space-y-3">
-        {meals.map((meal) => {
+        {meals.map(meal => {
           const dayName = DAY_NAMES[meal.day_of_week] || 'Day'
           const scaled = getScaledIngredients(meal)
+          const ps = meal.recipes ? (PROTEIN_STYLES[meal.recipes.protein_type] || PROTEIN_STYLES.any) : PROTEIN_STYLES.any
 
           return (
-            <div
-              key={meal.id}
-              className="border rounded-lg p-4 bg-white shadow-sm"
-            >
+            <div key={meal.id} className="rounded-lg border p-4" style={{ background: '#141414', borderColor: '#2A2A2A' }}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <span className="text-sm font-semibold text-gray-800">
-                    {dayName}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {meal.meal_date}
-                  </span>
+                  <span className="text-sm font-semibold" style={{ color: '#fff' }}>{dayName}</span>
+                  <span className="text-xs ml-2" style={{ color: '#666' }}>{meal.meal_date}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {meal.recipes && (
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      meal.recipes.protein_type === 'meat' ? 'bg-red-100 text-red-700' :
-                      meal.recipes.protein_type === 'fish' ? 'bg-blue-100 text-blue-700' :
-                      meal.recipes.protein_type === 'vegetarian' ? 'bg-green-100 text-green-700' :
-                      meal.recipes.protein_type === 'vegan' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span className="badge" style={{ background: ps.bg, color: ps.color }}>
                       {meal.recipes.protein_type}
                     </span>
                   )}
-                  <button
-                    onClick={() => handleSwap(meal.id)}
-                    disabled={swappingId === meal.id}
-                    className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                  >
+                  <button onClick={() => handleSwap(meal.id)} disabled={swappingId === meal.id}
+                    className="text-xs font-medium hover:underline disabled:opacity-50"
+                    style={{ color: '#3ECF8E' }}>
                     {swappingId === meal.id ? 'Swapping...' : 'Swap'}
                   </button>
                 </div>
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-1">
+              <h3 className="text-sm font-medium mb-1" style={{ color: '#fff' }}>
                 {meal.recipes ? meal.recipes.title : 'No recipe assigned'}
               </h3>
               {meal.recipes && (
-                <div className="text-xs text-gray-500 mb-2">
-                  Serves {meal.servings} · Scale: ×
-                  {Math.round((meal.servings / meal.recipes.servings_base) * 10) / 10}
-                  {meal.recipes.effort_level && (
-                    <span className="ml-3">
-                      Effort: {meal.recipes.effort_level}
-                    </span>
-                  )}
+                <div className="text-xs mb-2" style={{ color: '#666' }}>
+                  Serves {meal.servings} &middot; Scale x{Math.round(meal.servings / meal.recipes.servings_base * 10) / 10}
+                  {meal.recipes.effort_level && <span> &middot; {meal.recipes.effort_level} effort</span>}
                 </div>
               )}
               {scaled.length > 0 && (
-                <div className="text-xs text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
+                <div className="text-xs flex flex-wrap gap-x-3 gap-y-1" style={{ color: '#929292' }}>
                   {scaled.map((ing, i) => (
-                    <span key={i}>
-                      {ing.amount} {ing.unit} {ing.name}
-                      {i < scaled.length - 1 ? ',' : ''}
-                    </span>
+                    <span key={i}>{ing.amount} {ing.unit} {ing.name}{i < scaled.length - 1 ? ',' : ''}</span>
                   ))}
                 </div>
               )}
