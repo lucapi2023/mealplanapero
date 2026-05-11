@@ -93,14 +93,20 @@ CREATE POLICY "authenticated can insert" ON households FOR INSERT
 CREATE POLICY "owner can update" ON households FOR UPDATE
   USING (is_household_owner(id));
 
--- Household members: allow insert for first member or by owner
+-- Household members: allow insert for first member, by owner, or invited user
 CREATE POLICY "members can read" ON household_members FOR SELECT
   USING (household_id IN (SELECT get_my_household_ids()));
 
-CREATE POLICY "insert first member or owner" ON household_members FOR INSERT
+CREATE POLICY "insert member" ON household_members FOR INSERT
   WITH CHECK (
     is_household_owner(household_id)
     OR NOT household_has_members(household_id)
+    OR EXISTS (
+      SELECT 1 FROM public.invites
+      WHERE household_id = household_members.household_id
+      AND email = (SELECT email FROM auth.users WHERE id = auth.uid())
+      AND status = 'pending'
+    )
   );
 
 CREATE POLICY "owner can delete" ON household_members FOR DELETE
