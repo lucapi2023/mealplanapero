@@ -12,18 +12,43 @@ async function getClient() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState(null)
   const [household, setHousehold] = useState(null)
   const [members, setMembers] = useState([])
   const [invites, setInvites] = useState([])
 
   const ensureHousehold = async (supabase, uid, email) => {
+    const { data: myHhIds, error: rpcErr } = await supabase.rpc('get_my_household_ids')
+    if (!rpcErr && myHhIds && myHhIds.length > 0) return myHhIds[0]
+
     const { data: pref } = await supabase
       .from('preferences')
-      .select('household_id')
+      .select('household_id, id')
       .eq('user_id', uid)
       .maybeSingle()
 
-    if (pref?.household_id) return pref.household_id
+    if (pref?.household_id && !rpcErr && (!myHhIds || myHhIds.length === 0)) {
+      const { error: joinErr } = await supabase.from('household_members').insert({
+        household_id: pref.household_id,
+        user_id: uid,
+        role: 'member',
+      })
+      if (!joinErr) {
+        await supabase.from('preferences').upsert({
+          user_id: uid,
+          household_id: pref.household_id,
+          meals_per_week: 7,
+          meals_per_day: 1,
+          plan_days: 7,
+          meat_days: 2,
+          fish_days: 1,
+          vegetarian_days: 2,
+          vegan_days: 0,
+          servings_default: 2,
+        }, { onConflict: 'user_id' })
+        return pref.household_id
+      }
+    }
 
     if (email) {
       const { data: pendingInvite } = await supabase
@@ -34,43 +59,49 @@ export function AuthProvider({ children }) {
         .maybeSingle()
 
       if (pendingInvite) {
-        await supabase.from('household_members').insert({
+        const { error: joinErr } = await supabase.from('household_members').insert({
           household_id: pendingInvite.household_id,
           user_id: uid,
           role: 'member',
         })
-        await supabase.from('invites').update({ status: 'accepted' }).eq('id', pendingInvite.id)
-        await supabase.from('preferences').upsert({
-          user_id: uid,
-          household_id: pendingInvite.household_id,
-          meals_per_week: 7,
-          meals_per_day: 1,
-          plan_days: 7,
-          meat_days: 2,
-          fish_days: 1,
-          vegetarian_days: 2,
-          vegan_days: 0,
-          servings_default: 2,
-        }, { onConflict: 'user_id' })
-        return pendingInvite.household_id
+        if (!joinErr) {
+          await supabase.from('invites').update({ status: 'accepted' }).eq('id', pendingInvite.id)
+          await supabase.from('preferences').upsert({
+            user_id: uid,
+            household_id: pendingInvite.household_id,
+            meals_per_week: 7,
+            meals_per_day: 1,
+            plan_days: 7,
+            meat_days: 2,
+            fish_days: 1,
+            vegetarian_days: 2,
+            vegan_days: 0,
+            servings_default: 2,
+          }, { onConflict: 'user_id' })
+          return pendingInvite.household_id
+        }
       }
     }
 
-    const { data: hh } = await supabase
+    const { data: hh, error: hhErr } = await supabase
       .from('households')
       .insert({ name: 'My Household' })
       .select()
       .single()
 
-    if (!hh) return null
+    if (!hh || hhErr) return null
 
-    await supabase.from('household_members').insert({
+    const { error: memberErr } = await supabase.from('household_members').insert({
       household_id: hh.id,
       user_id: uid,
       role: 'owner',
     })
+    if (memberErr) {
+      console.error('Failed to add user to household_members:', memberErr)
+      return null
+    }
 
-    await supabase.from('preferences').upsert({
+    const { error: prefErr } = await supabase.from('preferences').upsert({
       user_id: uid,
       household_id: hh.id,
       meals_per_week: 7,
@@ -82,6 +113,9 @@ export function AuthProvider({ children }) {
       vegan_days: 0,
       servings_default: 2,
     }, { onConflict: 'user_id' })
+    if (prefErr) {
+      console.error('Failed to create preferences:', prefErr)
+    }
 
     return hh.id
   }
@@ -105,17 +139,30 @@ export function AuthProvider({ children }) {
       setUser(currentUser)
 
       if (currentUser) {
-        const hhId = await ensureHousehold(supabaseClient, currentUser.id, currentUser.email)
-        if (hhId) await loadHouseholdData(supabaseClient, hhId)
+        try {
+          const hhId = await ensureHousehold(supabaseClient, currentUser.id, currentUser.email)
+          if (hhId) {
+            await loadHouseholdData(supabaseClient, hhId)
+          } else {
+            setAuthError('Failed to set up household. Please refresh the page.')
+          }
+        } catch (err) {
+          setAuthError(err.message || 'Household setup failed')
+        }
       }
       setLoading(false)
 
       const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         const newUser = session?.user ?? null
         setUser(newUser)
+        setAuthError(null)
         if (newUser) {
-          const hhId = await ensureHousehold(supabaseClient, newUser.id, newUser.email)
-          if (hhId) await loadHouseholdData(supabaseClient, hhId)
+          try {
+            const hhId = await ensureHousehold(supabaseClient, newUser.id, newUser.email)
+            if (hhId) await loadHouseholdData(supabaseClient, hhId)
+          } catch (err) {
+            setAuthError(err.message || 'Household setup failed')
+          }
         } else {
           setHousehold(null)
           setMembers([])
@@ -173,7 +220,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, signIn, signOut, signUp,
+      user, loading, authError, signIn, signOut, signUp,
       household, members, invites,
       inviteMember, cancelInvite, refreshHousehold,
     }}>

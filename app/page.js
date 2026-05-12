@@ -18,7 +18,7 @@ function getWeekMonday() {
 }
 
 export default function Home() {
-  const { user, household } = useAuth()
+  const { user, household, authError } = useAuth()
   const [preferences, setPreferences] = useState(null)
   const [currentPlan, setCurrentPlan] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -51,9 +51,39 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!user || !household) return
+    if (!user) return
+    if (authError) { setLoading(false); setError(authError); return }
+    if (!household) { setLoading(false); return }
     initDashboard()
-  }, [user, household])
+  }, [user, household, authError])
+
+  // ... rest stays same
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <Layout>
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#3ECF8E' }}></div>
+            <p className="text-sm" style={{ color: '#666' }}>{authError || 'Setting up your household...'}</p>
+          </div>
+        </Layout>
+      </AuthGuard>
+    )
+  }
+
+  if (!household && !loading) {
+    return (
+      <AuthGuard>
+        <Layout>
+          <div className="text-center py-20">
+            <p className="text-sm mb-4" style={{ color: '#FCA5A5' }}>Failed to set up household. Please refresh the page.</p>
+            <button onClick={() => window.location.reload()} className="btn-primary">Refresh</button>
+          </div>
+        </Layout>
+      </AuthGuard>
+    )
+  }
 
   const generatePlan = async () => {
     setGenerating(true)

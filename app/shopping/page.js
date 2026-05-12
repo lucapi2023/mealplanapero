@@ -23,7 +23,7 @@ export default function ShoppingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user || !household) return
+    if (!user) return
     loadShoppingList()
   }, [user, household])
 

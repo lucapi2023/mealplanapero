@@ -17,7 +17,7 @@ export default function InventoryPage() {
   const [newItem, setNewItem] = useState({ name: '', quantity: 0, unit: '' })
 
   useEffect(() => {
-    if (!user || !household) return
+    if (!user) return
     loadInventory()
   }, [user, household])
 

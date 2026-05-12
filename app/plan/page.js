@@ -37,7 +37,7 @@ export default function PlanPage() {
   }
 
   useEffect(() => {
-    if (!user || !household) return
+    if (!user) return
     loadPlan(getWeekMonday())
   }, [user, household])
 
