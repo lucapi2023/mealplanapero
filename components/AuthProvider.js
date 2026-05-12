@@ -19,11 +19,19 @@ export function AuthProvider({ children }) {
 
   const ensureHousehold = async (supabase, uid, email) => {
     const { data: hhId, error } = await supabase.rpc('setup_household')
-    if (error) {
-      console.error('setup_household failed:', error)
-      return null
-    }
-    return hhId
+    if (!error && hhId) return hhId
+
+    console.error('setup_household RPC failed:', error?.message)
+
+    const { data: pref } = await supabase
+      .from('preferences')
+      .select('household_id')
+      .eq('user_id', uid)
+      .maybeSingle()
+
+    if (pref?.household_id) return pref.household_id
+
+    return null
   }
 
   const loadHouseholdData = async (supabase, hhId) => {
