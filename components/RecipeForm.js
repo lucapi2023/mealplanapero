@@ -75,6 +75,7 @@ export default function RecipeForm() {
       } else {
         const { data: newRecipe, error: insertError } = await supabase.from('recipes').insert(recipePayload).select().single()
         if (insertError) throw insertError
+        if (!newRecipe) throw new Error('Failed to create recipe')
         recipeId = newRecipe.id
       }
 
@@ -87,7 +88,8 @@ export default function RecipeForm() {
         const missingNames = names.filter(n => !existingMap[n])
         if (missingNames.length > 0) {
           const inserts = missingNames.map(name => ({ name, user_id: user.id, household_id: household.id }))
-          const { data: created } = await supabase.from('ingredients').insert(inserts).select('id, name')
+          const { data: created, error: ingErr } = await supabase.from('ingredients').insert(inserts).select('id, name')
+          if (ingErr) throw ingErr
           if (created) created.forEach(i => { existingMap[i.name] = i.id })
         }
         if (editId) {
@@ -102,7 +104,8 @@ export default function RecipeForm() {
       const tagNames = form.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
       if (tagNames.length > 0) {
         const tagRows = tagNames.map(tag => ({ recipe_id: recipeId, tag }))
-        await supabase.from('recipe_tags').insert(tagRows)
+        const { error: tagErr } = await supabase.from('recipe_tags').insert(tagRows)
+        if (tagErr) throw tagErr
       }
 
       router.push('/recipes')
