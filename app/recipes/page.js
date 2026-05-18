@@ -39,19 +39,38 @@ export default function RecipesPage() {
     setRecipes((prev) => prev.filter((r) => r.id !== id))
   }
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (recipes.length === 0) return
-    const headers = ['Title', 'Protein Type', 'Effort', 'Prep (min)', 'Cook (min)', 'Servings Base', 'Core', 'Instructions']
-    const rows = recipes.map((r) => [
-      r.title,
-      r.protein_type,
-      r.effort_level || '',
-      r.prep_time_min || '',
-      r.cook_time_min || '',
-      r.servings_base,
-      r.is_core ? 'yes' : 'no',
-      `"${(r.instructions || '').replace(/"/g, '""')}"`,
-    ])
+
+    const recipeIds = recipes.map(r => r.id)
+    const { data: allRI } = await supabase
+      .from('recipe_ingredients')
+      .select('recipe_id, amount, unit, ingredients(name)')
+      .in('recipe_id', recipeIds)
+
+    const ingMap = {}
+    if (allRI) {
+      allRI.forEach(ri => {
+        if (!ingMap[ri.recipe_id]) ingMap[ri.recipe_id] = []
+        ingMap[ri.recipe_id].push(`${ri.ingredients?.name || '?'}|${ri.amount}|${ri.unit}`)
+      })
+    }
+
+    const headers = ['Title', 'Protein Type', 'Effort', 'Prep (min)', 'Cook (min)', 'Servings Base', 'Core', 'Instructions', 'Ingredients']
+    const rows = recipes.map((r) => {
+      const ings = (ingMap[r.id] || []).join(';')
+      return [
+        r.title,
+        r.protein_type,
+        r.effort_level || '',
+        r.prep_time_min || '',
+        r.cook_time_min || '',
+        r.servings_base,
+        r.is_core ? 'yes' : 'no',
+        `"${(r.instructions || '').replace(/"/g, '""')}"`,
+        ings,
+      ]
+    })
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -86,8 +105,38 @@ export default function RecipesPage() {
         is_core: cols[6]?.trim().toLowerCase() === 'yes',
         instructions: (cols[7] || '').replace(/^"|"$/g, '').replace(/""/g, '"'),
       }
-      const { error } = await supabase.from('recipes').insert(recipePayload)
-      if (!error) imported++
+      const { data: newRecipe, error } = await supabase.from('recipes').insert(recipePayload).select().single()
+      if (error || !newRecipe) continue
+
+      const ingStr = cols[8] || ''
+      const ingParts = ingStr.split(';').filter(p => p.trim())
+      if (ingParts.length > 0) {
+        const parsed = ingParts.map(p => {
+          const [name, amount, unit] = p.split('|')
+          return { name: (name || '').trim(), amount: parseFloat(amount) || 0, unit: (unit || '').trim() }
+        }).filter(p => p.name && p.unit)
+
+        if (parsed.length > 0) {
+          const names = parsed.map(p => p.name)
+          const { data: existing } = await supabase.from('ingredients').select('id, name').in('name', names).eq('household_id', household.id)
+          const existingMap = {}
+          if (existing) existing.forEach(ing => { existingMap[ing.name] = ing.id })
+          const missingNames = names.filter(n => !existingMap[n])
+          if (missingNames.length > 0) {
+            const inserts = missingNames.map(name => ({ name, user_id: user.id, household_id: household.id }))
+            const { data: created } = await supabase.from('ingredients').insert(inserts).select('id, name')
+            if (created) created.forEach(ing => { existingMap[ing.name] = ing.id })
+          }
+          const riRows = parsed
+            .filter(p => existingMap[p.name])
+            .map(p => ({ recipe_id: newRecipe.id, ingredient_id: existingMap[p.name], amount: p.amount, unit: p.unit }))
+          if (riRows.length > 0) {
+            await supabase.from('recipe_ingredients').insert(riRows)
+          }
+        }
+      }
+
+      imported++
     }
     alert(`Imported ${imported} recipe(s).`)
     const { data } = await supabase
