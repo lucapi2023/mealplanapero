@@ -5,13 +5,13 @@ import { supabase } from '@/utils/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import Layout from '@/components/Layout'
+import MealScheduleGrid from '@/components/MealScheduleGrid'
 
 export default function SettingsPage() {
   const { user, household, members, invites, inviteMember, cancelInvite } = useAuth()
   const [pref, setPref] = useState({
-    meals_per_day: 1, plan_days: 7, meals_per_week: 7,
-    meat_days: 2, fish_days: 1, vegetarian_days: 2, vegan_days: 0,
-    servings_default: 2,
+    meals_per_day: 1, plan_days: 7,
+    servings_default: 2, meal_schedule: {},
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -26,18 +26,16 @@ export default function SettingsPage() {
       if (data) setPref({
         meals_per_day: data.meals_per_day ?? 1,
         plan_days: data.plan_days ?? 7,
-        meals_per_week: data.meals_per_week ?? 7,
-        meat_days: data.meat_days ?? 2,
-        fish_days: data.fish_days ?? 1,
-        vegetarian_days: data.vegetarian_days ?? 2,
-        vegan_days: data.vegan_days ?? 0,
         servings_default: data.servings_default ?? 2,
+        meal_schedule: data.meal_schedule || {},
       })
       setLoading(false)
     })
   }, [user])
 
   const handleChange = (field) => (e) => setPref(p => ({ ...p, [field]: parseInt(e.target.value) || 0 }))
+
+  const handleScheduleChange = (schedule) => setPref(p => ({ ...p, meal_schedule: schedule }))
 
   const handleSave = async () => {
     setSaving(true); setMessage('')
@@ -57,9 +55,6 @@ export default function SettingsPage() {
     catch (err) { setInviteMsg('Error: ' + err.message) }
     setInviting(false)
   }
-
-  const totalDays = pref.meat_days + pref.fish_days + pref.vegetarian_days + pref.vegan_days
-  const totalMeals = pref.meals_per_day * pref.plan_days
 
   return (
     <AuthGuard>
@@ -134,32 +129,28 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Meals per day</label>
-                  <input type="number" value={pref.meals_per_day} onChange={handleChange('meals_per_day')} min="1" max="3" className="input-field" />
+                  <select value={pref.meals_per_day} onChange={handleChange('meals_per_day')} className="select-field">
+                    <option value={1}>Dinner only</option>
+                    <option value={2}>Lunch + Dinner</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Days to plan</label>
                   <input type="number" value={pref.plan_days} onChange={handleChange('plan_days')} min="1" max="7" className="input-field" />
                 </div>
               </div>
-              <p className="text-xs" style={{ color: '#666' }}>Total meals: {totalMeals} ({pref.meals_per_day}/day x {pref.plan_days} days)</p>
 
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Meals per week</label>
-                <input type="number" value={pref.meals_per_week} onChange={handleChange('meals_per_week')} min="1" max="21" className="input-field" />
+                <h3 className="text-xs font-semibold mb-3" style={{ color: '#929292' }}>Meal Schedule — pick protein type for each slot</h3>
+                <div className="rounded-lg border p-4" style={{ background: '#0B0D0E', borderColor: '#2A2A2A' }}>
+                  <MealScheduleGrid
+                    schedule={pref.meal_schedule}
+                    onChange={handleScheduleChange}
+                    activeMeals={pref.meals_per_day}
+                    planDays={pref.plan_days}
+                  />
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Meat days</label><input type="number" value={pref.meat_days} onChange={handleChange('meat_days')} min="0" className="input-field" /></div>
-                <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Fish days</label><input type="number" value={pref.fish_days} onChange={handleChange('fish_days')} min="0" className="input-field" /></div>
-                <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Vegetarian days</label><input type="number" value={pref.vegetarian_days} onChange={handleChange('vegetarian_days')} min="0" className="input-field" /></div>
-                <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Vegan days</label><input type="number" value={pref.vegan_days} onChange={handleChange('vegan_days')} min="0" className="input-field" /></div>
-              </div>
-
-              <p className="text-xs" style={{ color: totalDays > pref.meals_per_week ? '#FCA5A5' : '#666' }}>
-                Assigned: {totalDays}/{pref.meals_per_week}
-                {totalDays < pref.meals_per_week && ` (${pref.meals_per_week - totalDays} any type)`}
-                {totalDays > pref.meals_per_week && ' Warning: sum exceeds meals per week!'}
-              </p>
 
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#929292' }}>Default servings</label>

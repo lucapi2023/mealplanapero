@@ -20,6 +20,7 @@ async function fetchMealsWithIngredients(planId) {
     .select('*, recipes(id, title, servings_base, protein_type, effort_level)')
     .eq('plan_id', planId)
     .order('day_of_week')
+    .order('meal_type')
   if (!meals) return []
 
   const mealIds = meals.filter(m => m.recipe_id).map(m => m.id)
@@ -115,6 +116,9 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="text-sm font-semibold" style={{ color: '#fff' }}>{dayName}</span>
+                  {meal.meal_type === 'lunch' && (
+                    <span className="text-xs ml-2 px-1.5 py-0.5 rounded" style={{ background: 'rgba(62,207,142,0.15)', color: '#6EE7B7' }}>Lunch</span>
+                  )}
                   <span className="text-xs ml-2" style={{ color: '#666' }}>{meal.meal_date}</span>
                 </div>
                 <div className="flex items-center gap-2">

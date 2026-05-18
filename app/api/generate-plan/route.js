@@ -57,7 +57,16 @@ export async function POST(req) {
       vegetarian_days,
       vegan_days,
       servings_default,
+      meals_per_day,
+      plan_days,
+      meal_schedule,
     } = pref
+
+    const schedule = meal_schedule || {}
+    const hasSchedule = Object.keys(schedule).length > 0
+    const useSchedule = hasSchedule
+    const totalDays = plan_days || 7
+    const mealsPerDay = meals_per_day || 1
 
     let weekStartDate
     try {
@@ -91,87 +100,94 @@ export async function POST(req) {
       )
     }
 
-    const types = []
-    for (let i = 0; i < meat_days; i++) types.push('meat')
-    for (let i = 0; i < fish_days; i++) types.push('fish')
-    for (let i = 0; i < vegetarian_days; i++) types.push('vegetarian')
-    for (let i = 0; i < vegan_days; i++) types.push('vegan')
-    const remaining = Math.max(0, meals_per_week - types.length)
-    for (let i = 0; i < remaining; i++) types.push('any')
-    shuffleArray(types)
-
-    const days = [0, 1, 2, 3, 4, 5, 6]
-    const selectedDays = chooseRandomDays(days, meals_per_week)
-
-    const usedRecipeIds = new Set()
     const planMeals = []
+    const usedRecipeIds = new Set()
 
-    for (let i = 0; i < selectedDays.length; i++) {
-      const dayIndex = selectedDays[i]
-      const protein = types[i]
-      const date = new Date(weekStartDate + 'T00:00:00')
-      date.setDate(date.getDate() + dayIndex)
+    const mealTypes = mealsPerDay >= 2 ? ['lunch', 'dinner'] : ['dinner']
 
-      let query = supabase
-        .from('recipes')
-        .select('id, title, servings_base')
-        .eq('household_id', householdId)
-        .eq('protein_type', protein)
-        .eq('is_core', true)
+    for (let dayIdx = 0; dayIdx < totalDays; dayIdx++) {
+      for (const mealType of mealTypes) {
+        let protein = 'any'
+        if (useSchedule && schedule[dayIdx] && schedule[dayIdx][mealType]) {
+          protein = schedule[dayIdx][mealType]
+        } else {
+          const fallbackTypes = []
+          for (let i = 0; i < (meat_days || 0); i++) fallbackTypes.push('meat')
+          for (let i = 0; i < (fish_days || 0); i++) fallbackTypes.push('fish')
+          for (let i = 0; i < (vegetarian_days || 0); i++) fallbackTypes.push('vegetarian')
+          for (let i = 0; i < (vegan_days || 0); i++) fallbackTypes.push('vegan')
+          const remaining = Math.max(0, (totalDays * mealTypes.length) - fallbackTypes.length)
+          for (let i = 0; i < remaining; i++) fallbackTypes.push('any')
+          shuffleArray(fallbackTypes)
+          const slotIndex = dayIdx * mealTypes.length + mealTypes.indexOf(mealType)
+          protein = slotIndex < fallbackTypes.length ? fallbackTypes[slotIndex] : 'any'
+        }
 
-      if (usedRecipeIds.size > 0) {
-        query = query.not('id', 'in', Array.from(usedRecipeIds))
-      }
+        const date = new Date(weekStartDate + 'T00:00:00')
+        date.setDate(date.getDate() + dayIdx)
 
-      let { data: recipes } = await query.limit(20)
-
-      if (!recipes || recipes.length === 0) {
-        let fallbackQuery = supabase
+        let query = supabase
           .from('recipes')
           .select('id, title, servings_base')
           .eq('household_id', householdId)
           .eq('protein_type', protein)
+          .eq('is_core', true)
 
         if (usedRecipeIds.size > 0) {
-          fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
+          query = query.not('id', 'in', Array.from(usedRecipeIds))
         }
-        const { data: fallbackRecipes } = await fallbackQuery.limit(20)
 
-        if (fallbackRecipes && fallbackRecipes.length > 0) {
-          recipes = fallbackRecipes
-        } else if (protein !== 'any') {
-          let anyQuery = supabase
+        let { data: recipes } = await query.limit(20)
+
+        if (!recipes || recipes.length === 0) {
+          let fallbackQuery = supabase
             .from('recipes')
             .select('id, title, servings_base')
             .eq('household_id', householdId)
+            .eq('protein_type', protein)
 
           if (usedRecipeIds.size > 0) {
-            anyQuery = anyQuery.not('id', 'in', Array.from(usedRecipeIds))
+            fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
           }
-          const { data: anyRecipes } = await anyQuery.limit(20)
-          if (anyRecipes && anyRecipes.length > 0) {
-            recipes = anyRecipes
+          const { data: fallbackRecipes } = await fallbackQuery.limit(20)
+
+          if (fallbackRecipes && fallbackRecipes.length > 0) {
+            recipes = fallbackRecipes
+          } else if (protein !== 'any') {
+            let anyQuery = supabase
+              .from('recipes')
+              .select('id, title, servings_base')
+              .eq('household_id', householdId)
+
+            if (usedRecipeIds.size > 0) {
+              anyQuery = anyQuery.not('id', 'in', Array.from(usedRecipeIds))
+            }
+            const { data: anyRecipes } = await anyQuery.limit(20)
+            if (anyRecipes && anyRecipes.length > 0) {
+              recipes = anyRecipes
+            }
           }
         }
+
+        if (!recipes || recipes.length === 0) {
+          return Response.json(
+            { error: `Not enough recipes for ${protein} on day ${dayIdx}. Add more recipes.` },
+            { status: 400 }
+          )
+        }
+
+        const chosenRecipe = recipes[Math.floor(Math.random() * recipes.length)]
+        usedRecipeIds.add(chosenRecipe.id)
+
+        planMeals.push({
+          day_of_week: dayIdx,
+          meal_date: date.toISOString().slice(0, 10),
+          meal_type: mealType,
+          recipe_id: chosenRecipe.id,
+          servings: servings_default,
+          is_locked: false,
+        })
       }
-
-      if (!recipes || recipes.length === 0) {
-        return Response.json(
-          { error: `Not enough recipes to fill ${protein} slot on day ${dayIndex}. Add more recipes.` },
-          { status: 400 }
-        )
-      }
-
-      const chosenRecipe = recipes[Math.floor(Math.random() * recipes.length)]
-      usedRecipeIds.add(chosenRecipe.id)
-
-      planMeals.push({
-        day_of_week: dayIndex,
-        meal_date: date.toISOString().slice(0, 10),
-        recipe_id: chosenRecipe.id,
-        servings: servings_default,
-        is_locked: false,
-      })
     }
 
     const { data: plan, error: planError } = await supabase
