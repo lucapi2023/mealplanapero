@@ -18,82 +18,16 @@ export function AuthProvider({ children }) {
   const [invites, setInvites] = useState([])
 
   const ensureHousehold = async (supabase, uid, email) => {
-    const { data: pref } = await supabase
-      .from('preferences')
-      .select('household_id')
-      .eq('user_id', uid)
-      .maybeSingle()
-
-    if (pref?.household_id) {
-      const { data: membership } = await supabase
-        .from('household_members')
-        .select('user_id')
-        .eq('user_id', uid)
-        .eq('household_id', pref.household_id)
-        .maybeSingle()
-
-      if (membership) return pref.household_id
-
-      const { error: repairErr } = await supabase.from('household_members').insert({
-        household_id: pref.household_id, user_id: uid, role: 'member',
-      })
-      if (!repairErr) return pref.household_id
-      console.error('membership repair failed:', repairErr)
-    }
-
-    if (email) {
-      const { data: pendingInvite } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('email', email)
-        .eq('status', 'pending')
-        .maybeSingle()
-
-      if (pendingInvite) {
-        const { error: joinErr } = await supabase.from('household_members').insert({
-          household_id: pendingInvite.household_id, user_id: uid, role: 'member',
-        })
-        if (!joinErr) {
-          await supabase.from('invites').update({ status: 'accepted' }).eq('id', pendingInvite.id)
-          await supabase.from('preferences').upsert({
-            user_id: uid, household_id: pendingInvite.household_id,
-            meals_per_week: 7, meals_per_day: 1, plan_days: 7,
-            meat_days: 2, fish_days: 1, vegetarian_days: 2, vegan_days: 0, servings_default: 2,
-          }, { onConflict: 'user_id' })
-          return pendingInvite.household_id
-        }
-      }
-    }
-
-    const { data: hh, error: hhErr } = await supabase
-      .from('households')
-      .insert({ name: 'My Household' })
-      .select()
-      .single()
-
-    if (!hh || hhErr) {
-      console.error('households insert failed:', hhErr)
+    const { data: hhId, error } = await supabase.rpc('setup_household')
+    if (error) {
+      console.error('setup_household RPC error:', error)
       return null
     }
-
-    const { error: memberErr } = await supabase.from('household_members').insert({
-      household_id: hh.id, user_id: uid, role: 'owner',
-    })
-    if (memberErr) {
-      console.error('household_members insert failed:', memberErr)
+    if (!hhId) {
+      console.error('setup_household returned null')
       return null
     }
-
-    const { error: prefErr } = await supabase.from('preferences').upsert({
-      user_id: uid, household_id: hh.id,
-      meals_per_week: 7, meals_per_day: 1, plan_days: 7,
-      meat_days: 2, fish_days: 1, vegetarian_days: 2, vegan_days: 0, servings_default: 2,
-    }, { onConflict: 'user_id' })
-    if (prefErr) {
-      console.error('preferences upsert failed:', prefErr)
-    }
-
-    return hh.id
+    return hhId
   }
 
   const loadHouseholdData = async (supabase, hhId) => {
