@@ -281,6 +281,174 @@ const RECIPES = [
     ]
   },
 
+  // 23. Risotto alla parmigiana
+  {
+    title: 'Risotto alla parmigiana', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 5, cook_time_min: 25, servings_base: 4, is_core: true,
+    instructions: "Tritare finemente la cipolla. Stufare in olio per 3-4 minuti, aggiungere brodo e cuocere 5-6 minuti. Versare il riso, tostarlo e cuocere aggiungendo brodo caldo un mestolo alla volta per circa 15 minuti. Spegnere il fuoco e mantecare con Parmigiano Reggiano DOP grattugiato e burro a tocchetti. Mescolare, far riposare un minuto e servire con pepe nero.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Brodo di carne', amount: 250, unit: 'ml' },
+      { name: 'Cipolle bianche', amount: 0.3, unit: 'piece' }, { name: 'Parmigiano Reggiano DOP', amount: 20, unit: 'g' },
+      { name: 'Burro', amount: 12.5, unit: 'g' }, { name: 'Olio extravergine d\'oliva', amount: 15, unit: 'ml' },
+    ]
+  },
+
+  // 24. Pasta e ricotta
+  {
+    title: 'Pasta e ricotta', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 15, servings_base: 4, is_core: false,
+    instructions: "Cuocere i fusilli in acqua salata. Setacciare la ricotta in una ciotola con un colino a maglie strette per renderla liscia. Aggiungere Parmigiano grattugiato, panna fresca, foglioline di timo, sale e pepe. Scolare la pasta al dente conservando acqua di cottura, versarla nella ciotola con il composto di ricotta e mescolare, allungando con acqua di cottura se necessario.",
+    ingredients: [
+      { name: 'Fusilli', amount: 80, unit: 'g' }, { name: 'Ricotta vaccina', amount: 87.5, unit: 'g' },
+      { name: 'Parmigiano Reggiano DOP', amount: 17.5, unit: 'g' }, { name: 'Panna fresca liquida', amount: 17.5, unit: 'g' },
+    ]
+  },
+
+  // 25. Risotto allo zafferano
+  {
+    title: 'Risotto allo zafferano', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 30, servings_base: 4, is_core: true,
+    instructions: "Mettere i pistilli di zafferano in infusione in acqua per almeno 6 ore. Tritare finemente la cipolla, appassirla in olio per 10-15 minuti a fuoco minimo. Tostare il riso, sfumare con vino bianco. Cuocere aggiungendo brodo caldo un mestolo per volta. A metà cottura unire lo zafferano con il suo liquido. Terminata la cottura, spegnere e mantecare con burro freddo e Grana Padano DOP grattugiato. Aggiungere poco brodo per la giusta consistenza.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Zafferano in pistilli', amount: 0.3, unit: 'cucchiaino' },
+      { name: 'Cipolle dorate', amount: 0.1, unit: 'piece' }, { name: 'Vino bianco', amount: 10, unit: 'g' },
+      { name: 'Brodo vegetale', amount: 250, unit: 'ml' }, { name: 'Grana Padano DOP', amount: 20, unit: 'g' },
+      { name: 'Burro', amount: 18.8, unit: 'g' },
+    ]
+  },
+
+  // 26. Risotto con zucchine
+  {
+    title: 'Risotto con zucchine', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 15, cook_time_min: 20, servings_base: 4, is_core: false,
+    instructions: "Tritare finemente la cipolla, appassirla in olio per 10 minuti. Tostare il riso, sfumare con vino bianco. Cuocere aggiungendo brodo caldo. Grattugiare le zucchine a maglie larghe, aggiungerle a metà cottura. Spegnere, aggiungere menta spezzettata, pepe, burro freddo e Parmigiano grattugiato. Mantecare con poco brodo e far riposare coperto qualche minuto.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Zucchine', amount: 87.5, unit: 'g' },
+      { name: 'Cipolle bianche', amount: 20, unit: 'g' }, { name: 'Vino bianco', amount: 25, unit: 'g' },
+      { name: 'Burro', amount: 12.5, unit: 'g' }, { name: 'Parmigiano Reggiano DOP', amount: 17.5, unit: 'g' },
+      { name: 'Brodo vegetale', amount: 250, unit: 'ml' }, { name: 'Menta', amount: 1.3, unit: 'foglie' },
+    ]
+  },
+
+  // 27. Risotto limone e gamberetti
+  {
+    title: 'Risotto limone e gamberetti', protein_type: 'fish', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 30, servings_base: 4, is_core: false,
+    instructions: "Sbollentare i gamberetti sgusciati per 2 minuti, scolarli. Tritare grossolanamente metà dei gamberi. Prelevare scorza e succo di limone. Tostare il riso nel burro, sfumare con vino bianco, aggiungere il succo di limone. Cuocere con brodo vegetale. A fine cottura unire i gamberi tritati e la scorza di limone. Spegnere, mantecare con burro. Servire decorando con gamberi interi, zest di limone ed erba cipollina.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 87.5, unit: 'g' }, { name: 'Succo di limone', amount: 0.3, unit: 'piece' },
+      { name: 'Scorza di limone', amount: 0.1, unit: 'piece' }, { name: 'Gamberetti', amount: 100, unit: 'g' },
+      { name: 'Brodo vegetale', amount: 250, unit: 'ml' }, { name: 'Burro', amount: 10, unit: 'g' },
+      { name: 'Vino bianco', amount: 0.1, unit: 'bicchiere' },
+    ]
+  },
+
+  // 28. Risotto al telefono
+  {
+    title: 'Risotto al telefono', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 25, servings_base: 4, is_core: false,
+    instructions: "Tritare lo scalogno, appassirlo in olio. Tostare il riso, unire la passata di pomodoro. Cuocere aggiungendo brodo vegetale per circa 18 minuti. Tagliare la mozzarella a cubetti. A cottura ultimata spegnere, aggiungere mozzarella, un filo d'olio e maggiorana. Mescolare fino a che il formaggio si scioglie creando l'effetto filante.",
+    ingredients: [
+      { name: 'Riso vialone nano', amount: 80, unit: 'g' }, { name: 'Scalogno', amount: 0.3, unit: 'piece' },
+      { name: 'Passata di pomodoro', amount: 50, unit: 'g' }, { name: 'Mozzarella', amount: 30, unit: 'g' },
+      { name: 'Brodo vegetale', amount: 375, unit: 'ml' }, { name: 'Olio extravergine d\'oliva', amount: 10, unit: 'ml' },
+    ]
+  },
+
+  // 29. Risotto alle carote
+  {
+    title: 'Risotto alle carote', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 18, servings_base: 4, is_core: false,
+    instructions: "Pelare e tagliare le carote a cubetti. Affettare il cipollotto. Sciogliere il burro, unire cipollotto e carote, stufare 10 minuti con brodo. Prelevare una parte del soffritto e frullarlo con brodo. Tostare il riso nel soffritto rimasto. Cuocere aggiungendo brodo. Tagliare il taleggio a cubetti. A fine cottura unire la crema di carote frullata. Fuori dal fuoco aggiungere il taleggio, coprire 1-2 minuti, poi pepare e aggiungere timo.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 100, unit: 'g' }, { name: 'Carote', amount: 95, unit: 'g' },
+      { name: 'Taleggio', amount: 37.5, unit: 'g' }, { name: 'Cipollotto fresco', amount: 17.5, unit: 'g' },
+      { name: 'Burro', amount: 10, unit: 'g' }, { name: 'Brodo vegetale', amount: 250, unit: 'ml' },
+    ]
+  },
+
+  // 30. Risotto alla barbabietola
+  {
+    title: 'Risotto alla barbabietola', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 5, cook_time_min: 20, servings_base: 4, is_core: false,
+    instructions: "Frullare 220g di barbabietola con brodo fino a purea. Rosolare lo scalogno in olio, tostare il riso 3 minuti, sfumare con vino bianco. Cuocere con brodo. Dopo 10 minuti aggiungere metà purea di barbabietola. Dopo 5 minuti aggiungere il resto. A fine cottura mantecare con olio. Servire con cubetti di barbabietola fresca, fiocchi di yogurt greco e timo.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Barbabietole precotte', amount: 65, unit: 'g' },
+      { name: 'Yogurt greco', amount: 25, unit: 'g' }, { name: 'Brodo vegetale', amount: 250, unit: 'ml' },
+      { name: 'Vino bianco secco', amount: 7.5, unit: 'g' }, { name: 'Scalogno', amount: 0.3, unit: 'piece' },
+      { name: 'Olio extravergine d\'oliva', amount: 7.5, unit: 'g' }, { name: 'Timo', amount: 0.5, unit: 'rametti' },
+    ]
+  },
+
+  // 31. Risotto agli asparagi e scampi
+  {
+    title: 'Risotto agli asparagi e scampi', protein_type: 'fish', effort_level: 'low',
+    prep_time_min: 20, cook_time_min: 35, servings_base: 4, is_core: false,
+    instructions: "Pulire gli scampi: staccare teste e code, estrarre la carne, eliminare l'intestino. Preparare il fumetto con i carapaci, verdure (carota, sedano, cipolla), vino bianco e acqua: rosolare 5 min, sfumare, coprire d'acqua e cuocere 10 min, filtrare. Rosolare gli scampi a pezzetti in padella. Pulire gli asparagi, tagliarli a rondelle, rosolarli. Tostare il riso, cuocere con il fumetto. Dopo 5 minuti aggiungere gli asparagi. A fine cottura mantecare con scampi e olio.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Asparagi', amount: 100, unit: 'g' },
+      { name: 'Scampi', amount: 200, unit: 'g' }, { name: 'Olio extravergine d\'oliva', amount: 2.5, unit: 'g' },
+      { name: 'Carote', amount: 0.3, unit: 'piece' }, { name: 'Sedano', amount: 0.3, unit: 'costa' },
+      { name: 'Cipolle bianche', amount: 0.3, unit: 'piece' }, { name: 'Vino bianco', amount: 12.5, unit: 'g' },
+    ]
+  },
+
+  // 32. Risotto alla paesana
+  {
+    title: 'Risotto alla paesana', protein_type: 'meat', effort_level: 'low',
+    prep_time_min: 20, cook_time_min: 35, servings_base: 4, is_core: false,
+    instructions: "Preparare il brodo vegetale. Tagliare a cubetti piccoli carote, sedano e cipolla. Rosolare la pancetta a cubetti, unire il soffritto e cuocere a fuoco dolce. Sbollentare e sbucciare le fave. Tagliare le zucchine a cubetti e i pomodori a cubetti (senza semi). Unire pomodori e zucchine al soffritto, rosolare 5 minuti. Tostare il riso, coprire con brodo e cuocere 15 minuti. A metà cottura unire fave e piselli. Mantecare con olio e Grana Padano DOP grattugiato. Guarnire con basilico.",
+    ingredients: [
+      { name: 'Riso Arborio', amount: 80, unit: 'g' }, { name: 'Fave', amount: 62.5, unit: 'g' },
+      { name: 'Pisellini', amount: 50, unit: 'g' }, { name: 'Pomodori ramati', amount: 50, unit: 'g' },
+      { name: 'Zucchine', amount: 25, unit: 'g' }, { name: 'Carote', amount: 25, unit: 'g' },
+      { name: 'Sedano', amount: 25, unit: 'g' }, { name: 'Cipolle', amount: 25, unit: 'g' },
+      { name: 'Pancetta', amount: 12.5, unit: 'g' }, { name: 'Brodo vegetale', amount: 250, unit: 'ml' },
+      { name: 'Grana Padano DOP', amount: 25, unit: 'g' }, { name: 'Olio extravergine d\'oliva', amount: 10, unit: 'ml' },
+    ]
+  },
+
+  // 33. Risotto primavera
+  {
+    title: 'Risotto primavera', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 15, cook_time_min: 25, servings_base: 4, is_core: false,
+    instructions: "Tritare il cipollotto e appassirlo in olio con poco brodo. Tagliare le zucchine a tocchetti, spuntare e tagliare i fagiolini, tagliare le taccole, sgranare i piselli. Tostare il riso, bagnare con brodo vegetale. Sbollentare le verdure preparate, passarle in acqua ghiacciata e scolarle. Unire il cipollotto appassito e le zucchine crude al risotto. A cottura quasi ultimata aggiungere le verdure sbollentate. Mantecare con burro e servire con Parmigiano grattugiato e pepe.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Zucchine', amount: 0.5, unit: 'piece' },
+      { name: 'Fagiolini', amount: 62.5, unit: 'g' }, { name: 'Taccole', amount: 37.5, unit: 'g' },
+      { name: 'Piselli', amount: 25, unit: 'g' }, { name: 'Cipollotti', amount: 0.3, unit: 'piece' },
+      { name: 'Brodo vegetale', amount: 250, unit: 'ml' }, { name: 'Burro', amount: 10, unit: 'g' },
+      { name: 'Parmigiano Reggiano', amount: 20, unit: 'g' },
+    ]
+  },
+
+  // 34. Risotto con piselli freschi
+  {
+    title: 'Risotto con piselli freschi', protein_type: 'vegetarian', effort_level: 'low',
+    prep_time_min: 10, cook_time_min: 20, servings_base: 4, is_core: false,
+    instructions: "Appassire lo scalogno tritato in olio. Unire i piselli freschi, insaporire 2 minuti, aggiungere brodo e cuocere 10 minuti. Frullare metà dei piselli con poco brodo fino a crema. Tostare il riso in olio, sfumare con vino bianco. Cuocere aggiungendo brodo. Dopo 10 minuti incorporare la crema di piselli. Verso fine cottura aggiungere i piselli interi. Fuori dal fuoco mantecare con burro, Parmigiano e scorza di limone grattugiata. Servire con foglie di menta fresca.",
+    ingredients: [
+      { name: 'Riso Arborio', amount: 90, unit: 'g' }, { name: 'Piselli', amount: 100, unit: 'g' },
+      { name: 'Scalogno', amount: 0.3, unit: 'piece' }, { name: 'Brodo vegetale', amount: 250, unit: 'ml' },
+      { name: 'Vino bianco', amount: 0.1, unit: 'bicchiere' }, { name: 'Burro', amount: 10, unit: 'g' },
+      { name: 'Parmigiano grattugiato', amount: 12.5, unit: 'g' }, { name: 'Scorza di limone', amount: 0.3, unit: 'piece' },
+      { name: 'Menta', amount: 2, unit: 'foglie' }, { name: 'Olio di oliva', amount: 10, unit: 'ml' },
+    ]
+  },
+
+  // 35. Risotto alla milanese
+  {
+    title: 'Risotto alla milanese', protein_type: 'meat', effort_level: 'low',
+    prep_time_min: 30, cook_time_min: 25, servings_base: 4, is_core: true,
+    instructions: "Estrarre il midollo dalle ossa di bue. Tritare la cipolla. Rosolare la cipolla in metà burro a fuoco dolce. Unire il midollo e farlo sciogliere lentamente. Tostare il riso. Sciogliere lo zafferano in un mestolo di brodo. Cuocere il riso aggiungendo brodo poco alla volta. A 5 minuti dalla fine aggiungere lo zafferano sciolto. Mantecare fuori dal fuoco con il burro restante a cubetti e Grana Padano grattugiato. Decorare con pistilli di zafferano.",
+    ingredients: [
+      { name: 'Riso Carnaroli', amount: 80, unit: 'g' }, { name: 'Brodo di carne', amount: 150, unit: 'ml' },
+      { name: 'Midollo di bovino', amount: 15, unit: 'g' }, { name: 'Burro', amount: 12.5, unit: 'g' },
+      { name: 'Grana Padano', amount: 12.5, unit: 'g' }, { name: 'Cipolla', amount: 0.3, unit: 'piece' },
+      { name: 'Zafferano', amount: 0.1, unit: 'bustina' },
+    ]
+  },
+
 ]
 
 async function prompt(question) {
@@ -347,7 +515,7 @@ async function main() {
   }
 
   await supabase.auth.signOut()
-  console.log('\nDone! All 22 recipes imported.')
+  console.log('\nDone! All 35 recipes imported.')
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1) })
