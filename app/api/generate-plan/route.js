@@ -135,13 +135,11 @@ export async function POST(req) {
           query = query.eq('protein_type', protein)
         }
 
-        query = query.eq('is_core', true)
-
         if (usedRecipeIds.size > 0) {
           query = query.not('id', 'in', Array.from(usedRecipeIds))
         }
 
-        let { data: recipes } = await query.limit(20)
+        let { data: recipes } = await query.limit(50)
 
         if (!recipes || recipes.length === 0) {
           let fallbackQuery = supabase
@@ -156,23 +154,10 @@ export async function POST(req) {
           if (usedRecipeIds.size > 0) {
             fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
           }
-          const { data: fallbackRecipes } = await fallbackQuery.limit(20)
+          const { data: fallbackRecipes } = await fallbackQuery.limit(50)
 
           if (fallbackRecipes && fallbackRecipes.length > 0) {
             recipes = fallbackRecipes
-          } else if (protein !== 'any') {
-            let anyQuery = supabase
-              .from('recipes')
-              .select('id, title, servings_base')
-              .eq('household_id', householdId)
-
-            if (usedRecipeIds.size > 0) {
-              anyQuery = anyQuery.not('id', 'in', Array.from(usedRecipeIds))
-            }
-            const { data: anyRecipes } = await anyQuery.limit(20)
-            if (anyRecipes && anyRecipes.length > 0) {
-              recipes = anyRecipes
-            }
           }
         }
 

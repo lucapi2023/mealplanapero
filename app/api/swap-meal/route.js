@@ -58,7 +58,6 @@ export async function POST(req) {
       .from('recipes')
       .select('id, title, servings_base')
       .eq('household_id', householdId)
-      .eq('is_core', true)
       .eq('protein_type', proteinType || 'any')
 
     if (usedIds.size > 0) {
