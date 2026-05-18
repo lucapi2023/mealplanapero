@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createClient } from '@supabase/supabase-js'
+import WebSocket from 'ws'
 import readline from 'readline'
 
 const SUPABASE_URL = 'https://oghvlybiodahacdlcxyg.supabase.co'
@@ -41,7 +42,9 @@ async function main() {
   const email = process.env.MEALPLAN_EMAIL || await prompt('Email: ')
   const password = process.env.MEALPLAN_PASSWORD || await prompt('Password: ')
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: { transport: WebSocket },
+  })
 
   console.log('\nSigning in...')
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
