@@ -475,7 +475,21 @@ async function main() {
   if (!pref?.household_id) { console.error('No household found.'); process.exit(1) }
   const householdId = pref.household_id
 
+  // Pre-fetch existing recipe titles to avoid duplicates
+  const { data: existingRecipes } = await supabase.from('recipes')
+    .select('title').eq('household_id', householdId)
+  const existingTitles = new Set((existingRecipes || []).map(r => r.title))
+
+  let inserted = 0
+  let skipped = 0
+
   for (const recipe of RECIPES) {
+    if (existingTitles.has(recipe.title)) {
+      console.log(`\nSkipping (already exists): ${recipe.title}`)
+      skipped++
+      continue
+    }
+
     console.log(`\nInserting: ${recipe.title}...`)
 
     const { data: newRecipe, error: recErr } = await supabase.from('recipes').insert({
@@ -488,6 +502,8 @@ async function main() {
 
     if (recErr || !newRecipe) { console.error('  Recipe insert failed:', recErr?.message); continue }
     console.log(`  Recipe created (${newRecipe.id.slice(0, 8)}...)`)
+    existingTitles.add(recipe.title)
+    inserted++
 
     if (recipe.ingredients.length > 0) {
       const names = recipe.ingredients.map(i => i.name)
@@ -515,7 +531,7 @@ async function main() {
   }
 
   await supabase.auth.signOut()
-  console.log('\nDone! All 35 recipes imported.')
+  console.log(`\nDone! ${inserted} recipes imported, ${skipped} skipped (already existed).`)
 }
 
 main().catch(err => { console.error('Fatal:', err); process.exit(1) })
