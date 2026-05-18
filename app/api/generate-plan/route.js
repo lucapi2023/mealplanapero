@@ -130,8 +130,12 @@ export async function POST(req) {
           .from('recipes')
           .select('id, title, servings_base')
           .eq('household_id', householdId)
-          .eq('protein_type', protein)
-          .eq('is_core', true)
+
+        if (protein !== 'any') {
+          query = query.eq('protein_type', protein)
+        }
+
+        query = query.eq('is_core', true)
 
         if (usedRecipeIds.size > 0) {
           query = query.not('id', 'in', Array.from(usedRecipeIds))
@@ -144,7 +148,10 @@ export async function POST(req) {
             .from('recipes')
             .select('id, title, servings_base')
             .eq('household_id', householdId)
-            .eq('protein_type', protein)
+
+          if (protein !== 'any') {
+            fallbackQuery = fallbackQuery.eq('protein_type', protein)
+          }
 
           if (usedRecipeIds.size > 0) {
             fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
