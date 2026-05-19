@@ -22,19 +22,15 @@ export async function POST(req) {
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oghvlybiodahacdlcxyg.supabase.co',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__4hZvrkyxAJ2-bVqw6nVWQ_nT5izI1R',
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__4hZvrkyxAJ2-bVqw6nVWQ_nT5izI1R'
     )
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    await supabase.auth.setSession({ access_token: token, refresh_token: '' })
 
     const { data: pref } = await supabase
       .from('preferences')
@@ -139,34 +135,30 @@ export async function POST(req) {
           query = query.not('id', 'in', Array.from(usedRecipeIds))
         }
 
-        let { data: recipes, error: queryError } = await query.limit(50)
+        let recipesQuery = supabase
+          .from('recipes')
+          .select('id, title, servings_base')
+          .eq('household_id', householdId)
+
+        if (protein !== 'any') recipesQuery = recipesQuery.eq('protein_type', protein)
+        if (usedRecipeIds.size > 0) recipesQuery = recipesQuery.not('id', 'in', Array.from(usedRecipeIds))
+
+        let { data: recipes } = await recipesQuery.limit(50)
 
         if (!recipes || recipes.length === 0) {
-          if (queryError) console.error('primary query error:', queryError)
-
-          let fallbackQuery = supabase
-            .from('recipes')
-            .select('id, title, servings_base')
-            .eq('household_id', householdId)
-
           if (protein !== 'any') {
-            fallbackQuery = fallbackQuery.eq('protein_type', protein)
-          }
-          if (usedRecipeIds.size > 0) {
-            fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
-          }
-
-          let { data: fallbackRecipes, error: fbError } = await fallbackQuery.limit(50)
-          if (fbError) console.error('fallback query error:', fbError)
-
-          if (fallbackRecipes && fallbackRecipes.length > 0) {
-            recipes = fallbackRecipes
+            const { data: anyRecipes } = await supabase
+              .from('recipes')
+              .select('id, title, servings_base')
+              .eq('household_id', householdId)
+              .limit(50)
+            if (anyRecipes && anyRecipes.length > 0) recipes = anyRecipes
           }
         }
 
         if (!recipes || recipes.length === 0) {
           return Response.json(
-            { error: `Not enough recipes for ${protein} on day ${dayIdx}. Add more recipes (household: ${householdId}).` },
+            { error: `Not enough recipes for ${protein} on day ${dayIdx}. HH: ${householdId}` },
             { status: 400 }
           )
         }
