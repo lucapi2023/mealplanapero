@@ -13,14 +13,17 @@ export async function POST(req) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__4hZvrkyxAJ2-bVqw6nVWQ_nT5izI1R',
       {
         auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
-        global: { headers: { Authorization: `Bearer ${token}` } },
       }
     )
 
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-    const userId = payload.sub
-    if (!userId) {
-      return Response.json({ error: 'Invalid token' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { error: sessionError } = await supabase.auth.setSession({ access_token: token, refresh_token: '' })
+    if (sessionError) {
+      return Response.json({ error: 'Session setup failed: ' + sessionError.message }, { status: 401 })
     }
 
     const body = await req.json()
@@ -29,7 +32,7 @@ export async function POST(req) {
     const { data: pref } = await supabase
       .from('preferences')
       .select('household_id')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .maybeSingle()
 
     const householdId = pref?.household_id
