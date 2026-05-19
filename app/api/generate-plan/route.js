@@ -139,9 +139,11 @@ export async function POST(req) {
           query = query.not('id', 'in', Array.from(usedRecipeIds))
         }
 
-        let { data: recipes } = await query.limit(50)
+        let { data: recipes, error: queryError } = await query.limit(50)
 
         if (!recipes || recipes.length === 0) {
+          if (queryError) console.error('primary query error:', queryError)
+
           let fallbackQuery = supabase
             .from('recipes')
             .select('id, title, servings_base')
@@ -150,11 +152,12 @@ export async function POST(req) {
           if (protein !== 'any') {
             fallbackQuery = fallbackQuery.eq('protein_type', protein)
           }
-
           if (usedRecipeIds.size > 0) {
             fallbackQuery = fallbackQuery.not('id', 'in', Array.from(usedRecipeIds))
           }
-          const { data: fallbackRecipes } = await fallbackQuery.limit(50)
+
+          let { data: fallbackRecipes, error: fbError } = await fallbackQuery.limit(50)
+          if (fbError) console.error('fallback query error:', fbError)
 
           if (fallbackRecipes && fallbackRecipes.length > 0) {
             recipes = fallbackRecipes
@@ -163,7 +166,7 @@ export async function POST(req) {
 
         if (!recipes || recipes.length === 0) {
           return Response.json(
-            { error: `Not enough recipes for ${protein} on day ${dayIdx}. Add more recipes.` },
+            { error: `Not enough recipes for ${protein} on day ${dayIdx}. Add more recipes (household: ${householdId}).` },
             { status: 400 }
           )
         }
