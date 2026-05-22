@@ -23,7 +23,7 @@ export default function ShoppingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !household) return
     loadShoppingList()
   }, [user, household])
 
@@ -42,29 +42,35 @@ export default function ShoppingPage() {
       .from('plan_meals')
       .select('id, recipe_id, servings, recipes(servings_base)')
       .eq('plan_id', plan.id)
-      .order('day_of_week')
 
     if (!meals || meals.length === 0) { setLoading(false); return }
 
-    const mealIds = meals.filter((m) => m.recipe_id).map((m) => m.id)
-    const { data: riData } = await supabase
-      .from('recipe_ingredients')
-      .select('plan_meals!inner(id), amount, unit, ingredients(name)')
-      .in('plan_meals.id', mealIds)
+    const recipeIds = [...new Set(meals.filter(m => m.recipe_id).map(m => m.recipe_id))]
+    let ingMap = {}
+    if (recipeIds.length > 0) {
+      const { data: riData } = await supabase
+        .from('recipe_ingredients')
+        .select('recipe_id, amount, unit, ingredients(name)')
+        .in('recipe_id', recipeIds)
+      if (riData) {
+        riData.forEach(ri => {
+          if (!ingMap[ri.recipe_id]) ingMap[ri.recipe_id] = []
+          ingMap[ri.recipe_id].push({ name: ri.ingredients?.name || 'Unknown', amount: ri.amount, unit: ri.unit })
+        })
+      }
+    }
 
     const agg = {}
-    if (riData) {
-      riData.forEach((ri) => {
-        if (!ri.plan_meals) return
-        const meal = meals.find((m) => m.id === ri.plan_meals.id)
-        if (!meal || !meal.recipes) return
-        const scale = meal.servings / (meal.recipes.servings_base || 1)
-        const name = ri.ingredients?.name || 'Unknown'
-        const key = `${name}|||${ri.unit}`
-        if (!agg[key]) agg[key] = { name, unit: ri.unit, amount: 0 }
-        agg[key].amount += ri.amount * scale
+    meals.forEach(meal => {
+      if (!meal.recipe_id || !meal.recipes) return
+      const scale = meal.servings / (meal.recipes.servings_base || 1)
+      const ings = ingMap[meal.recipe_id] || []
+      ings.forEach(ing => {
+        const key = `${ing.name}|||${ing.unit}`
+        if (!agg[key]) agg[key] = { name: ing.name, unit: ing.unit, amount: 0 }
+        agg[key].amount += ing.amount * scale
       })
-    }
+    })
 
     setIngredients(Object.values(agg))
     setLoading(false)
@@ -74,12 +80,12 @@ export default function ShoppingPage() {
     <AuthGuard>
       <Layout>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: '#fff' }}>Shopping List</h1>
-          <p className="text-sm mt-1" style={{ color: '#666' }}>Aggregated ingredients from your weekly plan</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Shopping List</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Aggregated ingredients from your weekly plan</p>
         </div>
 
         {loading ? (
-          <div className="text-center py-10" style={{ color: '#666' }}>Loading...</div>
+          <div className="text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Loading...</div>
         ) : (
           <GroceryList ingredients={ingredients} onClose={() => {}} />
         )}

@@ -77,6 +77,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
   const handleSwapRecipe = async (mealId, newRecipeId) => {
     setSelecting(null)
     setAvailable([])
+    setRecipeSearch('')
     if (!newRecipeId || newRecipeId === '__cancel__') return
 
     const { data: updated, error } = await supabase
@@ -88,7 +89,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
 
     if (error || !updated) return
 
-    // Update recipe_ingredients cache for new recipe
+    // Update cache for new recipe ingredients
     if (!ingMap[newRecipeId]) {
       const { data: ri } = await supabase
         .from('recipe_ingredients')
@@ -99,7 +100,12 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
       }
     }
 
-    setMeals(prev => prev.map(m => m.id === mealId ? { ...updated, recipes: updated.recipes } : m))
+    // Update the meal in state, replacing recipe info
+    setMeals(prev => prev.map(m => m.id === mealId ? {
+      ...m,
+      recipe_id: updated.recipe_id,
+      recipes: updated.recipes,
+    } : m))
     if (onRefresh) onRefresh()
   }
 
@@ -186,54 +192,61 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                   const ps = meal.recipes ? (PROTEIN_STYLES[meal.recipes.protein_type] || PROTEIN_STYLES.any) : PROTEIN_STYLES.any
 
                   return (
-                    <td key={d} className="py-1 px-2 align-top" style={{ width: `${100 / (days.length + 1)}%` }}>
-                      <div className="rounded-lg border p-2 cursor-pointer hover:border-[#3A3A3A] transition-colors relative h-16 overflow-hidden"
+                    <td key={d} className="py-1 px-2 align-top relative" style={{ width: `${100 / (days.length + 1)}%` }}>
+                      <div className="rounded-lg border p-2 cursor-pointer hover:border-[#3A3A3A] transition-colors h-16"
                         style={{ background: ps.bg, borderColor: ps.border }}
                         onClick={() => handleSelectRecipe(meal)}>
                         {selecting === meal.id ? (
-                          <div className="absolute left-0 right-0 top-0 z-20 p-1 rounded-lg" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', minHeight: '200px' }}>
-                            <input
-                              className="w-full text-xs rounded px-2 py-1 mb-1"
-                              style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-                              placeholder="Search recipes..."
-                              value={recipeSearch}
-                              onChange={e => setRecipeSearch(e.target.value)}
-                              autoFocus
-                              onBlur={() => setTimeout(() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }, 200)}
-                            />
-                            <div className="max-h-48 overflow-y-auto rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                              {loadingRecipes ? (
-                                <div className="px-2 py-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading recipes...</div>
-                              ) : (() => {
-                                const search = recipeSearch.toLowerCase()
-                                const filtered = available.filter(r => r.title.toLowerCase().includes(search))
-                                const matching = filtered.filter(r => r.group === 'match')
-                                const others = filtered.filter(r => r.group === 'other')
-                                return (
-                                  <>
-                                    <div className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
-                                      style={{ color: 'var(--text-tertiary)' }}
-                                      onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}>
-                                      Keep: {meal.recipes?.title || 'Current'}
-                                    </div>
-                                    {matching.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--accent)' }}>Matching type</div>}
-                                    {matching.map(r => (
-                                      <div key={r.id} className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
-                                        style={{ color: 'var(--text-primary)' }}
-                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
-                                    ))}
-                                    {others.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Other</div>}
-                                    {others.map(r => (
-                                      <div key={r.id} className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
-                                        style={{ color: 'var(--text-secondary)' }}
-                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
-                                    ))}
-                                    {!loadingRecipes && filtered.length === 0 && recipeSearch && (
-                                      <div className="px-2 py-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>No matches for "{recipeSearch}"</div>
-                                    )}
-                                  </>
-                                )
-                              })()}
+                          <div className="fixed inset-0 z-50 flex items-start justify-center pt-20" style={{ background: 'rgba(0,0,0,0.5)' }}
+                            onClick={() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }}>
+                            <div className="rounded-lg border shadow-2xl p-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', width: '360px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                              onClick={e => e.stopPropagation()}>
+                              <input
+                                className="w-full text-sm rounded px-3 py-2 mb-2 flex-shrink-0"
+                                style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                                placeholder="Search recipes..."
+                                value={recipeSearch}
+                                onChange={e => setRecipeSearch(e.target.value)}
+                                autoFocus
+                              />
+                              <div className="overflow-y-auto flex-1" style={{ maxHeight: '50vh' }}>
+                                {loadingRecipes ? (
+                                  <div className="px-2 py-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading recipes...</div>
+                                ) : (() => {
+                                  const search = recipeSearch.toLowerCase()
+                                  const filtered = available.filter(r => r.title.toLowerCase().includes(search))
+                                  const matching = filtered.filter(r => r.group === 'match')
+                                  const others = filtered.filter(r => r.group === 'other')
+                                  return (
+                                    <>
+                                      <div className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                                        style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border)' }}
+                                        onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}>
+                                        Keep current: {meal.recipes?.title || ''}
+                                      </div>
+                                      {matching.length > 0 && (
+                                        <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>Matching type ({matching.length})</div>
+                                      )}
+                                      {matching.map(r => (
+                                        <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                                          style={{ color: 'var(--text-primary)' }}
+                                          onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                                      ))}
+                                      {others.length > 0 && (
+                                        <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Other recipes ({others.length})</div>
+                                      )}
+                                      {others.map(r => (
+                                        <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                                          style={{ color: 'var(--text-secondary)' }}
+                                          onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                                      ))}
+                                      {!loadingRecipes && filtered.length === 0 && recipeSearch && (
+                                        <div className="px-2 py-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>No matches</div>
+                                      )}
+                                    </>
+                                  )
+                                })()}
+                              </div>
                             </div>
                           </div>
                         ) : (
