@@ -45,7 +45,6 @@ async function fetchPlanData(planId) {
 async function fetchAvailableRecipes(householdId, proteinType, excludeIds) {
   let query = supabase.from('recipes').select('id, title, protein_type').eq('household_id', householdId)
   if (proteinType && proteinType !== 'any') query = query.eq('protein_type', proteinType)
-  if (excludeIds && excludeIds.length > 0) query = query.not('id', 'in', excludeIds)
   const { data } = await query.order('title').limit(30)
   return data || []
 }
@@ -111,10 +110,9 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
     setRecipeSearch('')
     setAvailable([])
     setLoadingRecipes(true)
-    const existingIds = meals.filter(m => m.recipe_id && m.id !== meal.id).map(m => m.recipe_id)
-    const matching = await fetchAvailableRecipes(household.id, meal.recipes.protein_type, existingIds)
+    const matching = await fetchAvailableRecipes(household.id, meal.recipes.protein_type)
     const all = meal.recipes.protein_type !== 'any'
-      ? await fetchAvailableRecipes(household.id, null, [...existingIds, ...matching.map(r => r.id)])
+      ? await fetchAvailableRecipes(household.id, null)
       : []
     const combined = [...matching.map(r => ({ ...r, group: 'match' })), ...all.map(r => ({ ...r, group: 'other' }))]
     setAvailable(combined)
