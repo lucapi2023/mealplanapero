@@ -35,13 +35,18 @@ async function fetchRows(token, table, query) {
 }
 
 async function insertRow(token, table, body) {
-  const res = await fetch(`${BASE}/rest/v1/${table}?select=*`, {
+  const res = await fetch(`${BASE}/rest/v1/${table}`, {
     method: 'POST',
     headers: { ...headers(token), 'Prefer': 'return=representation' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) return null
-  return res.json()
+  if (!res.ok) {
+    const err = await res.text()
+    console.error(`${table} insert failed:`, res.status, err)
+    return null
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data[0] : data
 }
 
 async function upsertRow(token, table, body, onConflict) {
@@ -163,14 +168,22 @@ export async function POST(req) {
 
     // Save plan
     const plan = await insertRow(token, 'weekly_plans', {
-      user_id: userId,
-      household_id: householdId,
-      week_start_date: weekStartDate,
+      user_id: userId, household_id: householdId, week_start_date: weekStartDate,
     })
     if (!plan) return Response.json({ error: 'Failed to create plan' }, { status: 500 })
 
     for (const m of planMeals) {
-      await insertRow(token, 'plan_meals', { ...m, plan_id: plan.id })
+      const mealBody = {
+        plan_id: plan.id,
+        day_of_week: m.day_of_week,
+        meal_date: m.meal_date,
+        meal_type: m.meal_type || 'dinner',
+        recipe_id: m.recipe_id,
+        servings: m.servings || 2,
+        is_locked: false,
+      }
+      const result = await insertRow(token, 'plan_meals', mealBody)
+      if (!result) return Response.json({ error: 'Failed to save meal' }, { status: 500 })
     }
 
     const fullPlan = await fetchRows(token, 'plan_meals', {
