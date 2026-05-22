@@ -21,7 +21,6 @@ async function fetchPlanData(planId) {
     .select('*, recipes(id, title, servings_base, protein_type, effort_level)')
     .eq('plan_id', planId)
     .order('day_of_week')
-    .order('meal_type')
 
   if (!meals) return { meals: [], ingMap: {} }
 
