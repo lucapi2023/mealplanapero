@@ -155,7 +155,7 @@ export async function POST(req) {
           meal_date: date.toISOString().slice(0, 10),
           meal_type: mealType,
           recipe_id: chosenRecipe.id,
-          servings: servings_default,
+          servings: servings_default || 2,
           is_locked: false,
         })
       }
