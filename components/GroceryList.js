@@ -25,25 +25,34 @@ export default function GroceryList({ ingredients, onClose }) {
   }
 
   const handleExportReminders = (platform) => {
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MealPlan//Shopping List//EN']
+    const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//MealPlan//Shopping List//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:MealPlan Shopping List',
+    ]
     ingredients.sort((a, b) => a.name.localeCompare(b.name)).forEach(ing => {
       lines.push('BEGIN:VTODO')
+      lines.push(`DTSTART:${now}`)
       lines.push(`SUMMARY:${ing.name} - ${Math.round(ing.amount * 100) / 100} ${ing.unit}`)
+      lines.push(`DESCRIPTION:Buy ${Math.round(ing.amount * 100) / 100} ${ing.unit} of ${ing.name}`)
       lines.push('STATUS:NEEDS-ACTION')
+      lines.push('PRIORITY:0')
       lines.push('END:VTODO')
     })
     lines.push('END:VCALENDAR')
     const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
+    a.href = URL.createObjectURL(blob)
     a.download = 'mealplan-shopping-list.ics'
     a.click()
-    URL.revokeObjectURL(url)
     setExportType(null)
 
     if (platform === 'android') {
-      alert('File downloaded. Install Google Tasks/Keep or any .ics-compatible app, then open this file to import.')
+      setTimeout(() => alert('File downloaded. Open with Google Tasks/Keep or any .ics-compatible app to import reminders.'), 500)
     }
   }
 

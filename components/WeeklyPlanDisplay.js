@@ -60,6 +60,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
   const [selecting, setSelecting] = useState(null)
   const [available, setAvailable] = useState([])
   const [recipeSearch, setRecipeSearch] = useState('')
+  const [loadingRecipes, setLoadingRecipes] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
@@ -109,6 +110,8 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
     if (selecting === meal.id) { setSelecting(null); setAvailable([]); setRecipeSearch(''); return }
     setSelecting(meal.id)
     setRecipeSearch('')
+    setAvailable([])
+    setLoadingRecipes(true)
     const existingIds = meals.filter(m => m.recipe_id && m.id !== meal.id).map(m => m.recipe_id)
     const matching = await fetchAvailableRecipes(household.id, meal.recipes.protein_type, existingIds)
     const all = meal.recipes.protein_type !== 'any'
@@ -116,6 +119,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
       : []
     const combined = [...matching.map(r => ({ ...r, group: 'match' })), ...all.map(r => ({ ...r, group: 'other' }))]
     setAvailable(combined)
+    setLoadingRecipes(false)
   }
 
   if (loading) return <div className="text-center py-10" style={{ color: '#666' }}>Loading plan...</div>
@@ -185,12 +189,12 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                   const ps = meal.recipes ? (PROTEIN_STYLES[meal.recipes.protein_type] || PROTEIN_STYLES.any) : PROTEIN_STYLES.any
 
                   return (
-                    <td key={d} className="py-1 px-2 align-top">
-                      <div className="rounded-lg border p-2 min-h-[5rem] cursor-pointer hover:border-[#3A3A3A] transition-colors relative"
+                    <td key={d} className="py-1 px-2 align-top" style={{ width: `${100 / (days.length + 1)}%` }}>
+                      <div className="rounded-lg border p-2 cursor-pointer hover:border-[#3A3A3A] transition-colors relative h-16 overflow-hidden"
                         style={{ background: ps.bg, borderColor: ps.border }}
                         onClick={() => handleSelectRecipe(meal)}>
                         {selecting === meal.id ? (
-                          <div className="w-48">
+                          <div className="absolute left-0 right-0 top-0 z-20 p-1 rounded-lg" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', minHeight: '200px' }}>
                             <input
                               className="w-full text-xs rounded px-2 py-1 mb-1"
                               style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
@@ -201,37 +205,35 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                               onBlur={() => setTimeout(() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }, 200)}
                             />
                             <div className="max-h-48 overflow-y-auto rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                              {(() => {
-                                const filtered = available.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()))
+                              {loadingRecipes ? (
+                                <div className="px-2 py-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>Loading recipes...</div>
+                              ) : (() => {
+                                const search = recipeSearch.toLowerCase()
+                                const filtered = available.filter(r => r.title.toLowerCase().includes(search))
                                 const matching = filtered.filter(r => r.group === 'match')
                                 const others = filtered.filter(r => r.group === 'other')
-                                const current = { id: meal.recipe_id, title: meal.recipes?.title || 'Current', group: 'current' }
                                 return (
                                   <>
-                                    <div
-                                      className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                    <div className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
                                       style={{ color: 'var(--text-tertiary)' }}
-                                      onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}
-                                    >
-                                      Keep: {current.title}
+                                      onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}>
+                                      Keep: {meal.recipes?.title || 'Current'}
                                     </div>
                                     {matching.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--accent)' }}>Matching type</div>}
                                     {matching.map(r => (
-                                      <div key={r.id}
-                                        className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                      <div key={r.id} className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
                                         style={{ color: 'var(--text-primary)' }}
-                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}
-                                      >{r.title}</div>
+                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
                                     ))}
                                     {others.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Other</div>}
                                     {others.map(r => (
-                                      <div key={r.id}
-                                        className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                      <div key={r.id} className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
                                         style={{ color: 'var(--text-secondary)' }}
-                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}
-                                      >{r.title}</div>
+                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
                                     ))}
-                                    {filtered.length === 0 && <div className="px-2 py-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>No matches</div>}
+                                    {!loadingRecipes && filtered.length === 0 && recipeSearch && (
+                                      <div className="px-2 py-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>No matches for "{recipeSearch}"</div>
+                                    )}
                                   </>
                                 )
                               })()}
