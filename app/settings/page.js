@@ -56,6 +56,33 @@ export default function SettingsPage() {
     setInviting(false)
   }
 
+  const [dedupMsg, setDedupMsg] = useState('')
+  const [deduping, setDeduping] = useState(false)
+
+  const handleDeleteDuplicates = async () => {
+    if (!confirm('This will delete duplicate recipes (same title). Continue?')) return
+    setDeduping(true)
+    setDedupMsg('')
+    try {
+      const { data: recipes } = await supabase.from('recipes').select('id, title').eq('household_id', household.id).order('created_at', { ascending: true })
+      if (!recipes) { setDedupMsg('No recipes found.'); setDeduping(false); return }
+      const seen = {}
+      const toDelete = []
+      recipes.forEach(r => {
+        const key = r.title.toLowerCase().trim()
+        if (seen[key]) toDelete.push(r.id)
+        else seen[key] = true
+      })
+      if (toDelete.length === 0) { setDedupMsg('No duplicates found.'); setDeduping(false); return }
+      const { error } = await supabase.from('recipes').delete().in('id', toDelete)
+      if (error) throw error
+      setDedupMsg(`Deleted ${toDelete.length} duplicate recipe(s).`)
+    } catch (err) {
+      setDedupMsg('Error: ' + err.message)
+    }
+    setDeduping(false)
+  }
+
   return (
     <AuthGuard>
       <Layout>
@@ -119,6 +146,13 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 {inviteMsg && <p className="text-xs mt-2" style={{ color: inviteMsg.startsWith('Error') ? '#FCA5A5' : '#6EE7B7' }}>{inviteMsg}</p>}
+              </div>
+
+              <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                <button onClick={handleDeleteDuplicates} disabled={deduping} className="btn-danger text-xs">
+                  {deduping ? 'Deleting...' : 'Delete Duplicate Recipes'}
+                </button>
+                {dedupMsg && <p className="text-xs mt-2" style={{ color: dedupMsg.startsWith('Error') ? '#FCA5A5' : '#6EE7B7' }}>{dedupMsg}</p>}
               </div>
             </div>
 

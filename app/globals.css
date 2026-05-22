@@ -67,6 +67,13 @@ input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px
 }
 .btn-secondary:hover { border-color: var(--border-hover); color: var(--text-primary); }
 
+.btn-danger {
+  background: transparent; color: var(--danger); font-weight: 500; border-radius: 8px;
+  padding: 8px 16px; font-size: 14px; border: 1px solid var(--danger); transition: all 0.15s; cursor: pointer; opacity: 0.6;
+}
+.btn-danger:hover { opacity: 1; }
+.btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
+
 .card {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
   padding: 20px; box-shadow: var(--card-shadow);
@@ -93,8 +100,12 @@ input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px
 
 @media print {
   .no-print { display: none !important; }
-  body { background: #fff !important; color: #000 !important; }
+  body { background: #fff !important; color: #000 !important; font-size: 10px !important; }
   .card { box-shadow: none; border: 1px solid #ccc; background: #fff !important; }
+  main { margin-left: 0 !important; padding: 0 10mm !important; }
+  table { width: 100% !important; }
+  td { padding: 2px 4px !important; }
+  @page { size: A4 landscape; margin: 8mm; }
 }
 
 [data-theme="light"] .btn-primary { color: #fff; }
