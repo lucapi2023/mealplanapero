@@ -59,6 +59,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
   const [showGrocery, setShowGrocery] = useState(false)
   const [selecting, setSelecting] = useState(null)
   const [available, setAvailable] = useState([])
+  const [recipeSearch, setRecipeSearch] = useState('')
 
   const loadData = async () => {
     setLoading(true)
@@ -105,11 +106,16 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
 
   const handleSelectRecipe = async (meal) => {
     if (!meal.recipes || !household) return
-    if (selecting === meal.id) { setSelecting(null); setAvailable([]); return }
+    if (selecting === meal.id) { setSelecting(null); setAvailable([]); setRecipeSearch(''); return }
     setSelecting(meal.id)
+    setRecipeSearch('')
     const existingIds = meals.filter(m => m.recipe_id && m.id !== meal.id).map(m => m.recipe_id)
-    const recipes = await fetchAvailableRecipes(household.id, meal.recipes.protein_type, existingIds)
-    setAvailable(recipes)
+    const matching = await fetchAvailableRecipes(household.id, meal.recipes.protein_type, existingIds)
+    const all = meal.recipes.protein_type !== 'any'
+      ? await fetchAvailableRecipes(household.id, null, [...existingIds, ...matching.map(r => r.id)])
+      : []
+    const combined = [...matching.map(r => ({ ...r, group: 'match' })), ...all.map(r => ({ ...r, group: 'other' }))]
+    setAvailable(combined)
   }
 
   if (loading) return <div className="text-center py-10" style={{ color: '#666' }}>Loading plan...</div>
@@ -139,8 +145,11 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
-        <button onClick={() => setShowGrocery(!showGrocery)} className="btn-primary">
+      <div className="flex justify-between items-center mb-4">
+        <button onClick={() => window.print()} className="btn-secondary text-xs no-print">
+          Print / PDF
+        </button>
+        <button onClick={() => setShowGrocery(!showGrocery)} className="btn-primary no-print">
           {showGrocery ? 'Hide Grocery' : 'Grocery List'}
         </button>
       </div>
@@ -181,21 +190,53 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                         style={{ background: ps.bg, borderColor: ps.border }}
                         onClick={() => handleSelectRecipe(meal)}>
                         {selecting === meal.id ? (
-                          <select
-                            className="w-full text-xs rounded px-1 py-1"
-                            style={{ background: '#0B0D0E', color: '#fff', border: '1px solid #333' }}
-                            value={meal.recipe_id || '__cancel__'}
-                            onChange={e => handleSwapRecipe(meal.id, e.target.value)}
-                            autoFocus
-                            onBlur={() => { setSelecting(null); setAvailable([]) }}
-                          >
-                            <option value="__cancel__">Close</option>
-                            <option value={meal.recipe_id}>{meal.recipes?.title || 'Current'}</option>
-                            <option disabled>──</option>
-                            {available.map(r => (
-                              <option key={r.id} value={r.id}>{r.title}</option>
-                            ))}
-                          </select>
+                          <div className="w-48">
+                            <input
+                              className="w-full text-xs rounded px-2 py-1 mb-1"
+                              style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                              placeholder="Search recipes..."
+                              value={recipeSearch}
+                              onChange={e => setRecipeSearch(e.target.value)}
+                              autoFocus
+                              onBlur={() => setTimeout(() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }, 200)}
+                            />
+                            <div className="max-h-48 overflow-y-auto rounded" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                              {(() => {
+                                const filtered = available.filter(r => r.title.toLowerCase().includes(recipeSearch.toLowerCase()))
+                                const matching = filtered.filter(r => r.group === 'match')
+                                const others = filtered.filter(r => r.group === 'other')
+                                const current = { id: meal.recipe_id, title: meal.recipes?.title || 'Current', group: 'current' }
+                                return (
+                                  <>
+                                    <div
+                                      className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                      style={{ color: 'var(--text-tertiary)' }}
+                                      onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}
+                                    >
+                                      Keep: {current.title}
+                                    </div>
+                                    {matching.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--accent)' }}>Matching type</div>}
+                                    {matching.map(r => (
+                                      <div key={r.id}
+                                        className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                        style={{ color: 'var(--text-primary)' }}
+                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}
+                                      >{r.title}</div>
+                                    ))}
+                                    {others.length > 0 && <div className="px-2 py-0.5 text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>Other</div>}
+                                    {others.map(r => (
+                                      <div key={r.id}
+                                        className="px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--bg-hover)]"
+                                        style={{ color: 'var(--text-secondary)' }}
+                                        onMouseDown={() => handleSwapRecipe(meal.id, r.id)}
+                                      >{r.title}</div>
+                                    ))}
+                                    {filtered.length === 0 && <div className="px-2 py-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>No matches</div>}
+                                  </>
+                                )
+                              })()}
+                            </div>
+                          </div>
                         ) : (
                           <>
                             <span className="text-xs font-medium block truncate" style={{ color: '#fff' }}>
