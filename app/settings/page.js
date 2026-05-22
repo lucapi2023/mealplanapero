@@ -60,12 +60,14 @@ export default function SettingsPage() {
   const [deduping, setDeduping] = useState(false)
 
   const handleDeleteDuplicates = async () => {
+    if (!household) return
     if (!confirm('This will delete duplicate recipes (same title). Continue?')) return
     setDeduping(true)
     setDedupMsg('')
     try {
-      const { data: recipes } = await supabase.from('recipes').select('id, title').eq('household_id', household.id).order('created_at', { ascending: true })
-      if (!recipes) { setDedupMsg('No recipes found.'); setDeduping(false); return }
+      const { data: recipes, error: fetchErr } = await supabase.from('recipes').select('id, title').eq('household_id', household.id).order('created_at', { ascending: true })
+      if (fetchErr) throw fetchErr
+      if (!recipes || recipes.length === 0) { setDedupMsg('No recipes found.'); setDeduping(false); return }
       const seen = {}
       const toDelete = []
       recipes.forEach(r => {

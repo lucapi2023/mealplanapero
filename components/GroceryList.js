@@ -32,7 +32,7 @@ export default function GroceryList({ ingredients, onClose }) {
       if (!grouped[cat] || grouped[cat].length === 0) return
       html += `<h3>${cat.charAt(0).toUpperCase() + cat.slice(1)}</h3><ul>`
       grouped[cat].forEach(ing => {
-        html += `<li><input type="checkbox"><strong>${Math.round(ing.amount * 100) / 100} ${ing.unit}</strong> ${ing.name}</li>`
+        html += `<li><input type="checkbox">${ing.name} <strong>${Math.round(ing.amount * 100) / 100} ${ing.unit}</strong></li>`
       })
       html += '</ul>'
     })
@@ -48,7 +48,7 @@ export default function GroceryList({ ingredients, onClose }) {
     const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
     const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MealPlan//Shopping//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Shopping List']
     ingredients.sort((a, b) => a.name.localeCompare(b.name)).forEach(ing => {
-      const summary = `${Math.round(ing.amount * 100) / 100} ${ing.unit} ${ing.name}`
+      const summary = `${ing.name} - ${Math.round(ing.amount * 100) / 100} ${ing.unit}`
       const cat = getCategory(ing.name)
       lines.push('BEGIN:VTODO')
       lines.push(`CREATED:${now}`)
@@ -112,10 +112,10 @@ export default function GroceryList({ ingredients, onClose }) {
               {grouped[cat].map((ing, i) => (
                 <li key={i} className="flex items-center gap-2 py-1 text-sm">
                   <input type="checkbox" style={{ accentColor: 'var(--accent)' }} />
+                  <span style={{ color: 'var(--text-secondary)' }}>{ing.name}</span>
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                     {Math.round(ing.amount * 100) / 100} {ing.unit}
                   </span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{ing.name}</span>
                 </li>
               ))}
             </ul>
