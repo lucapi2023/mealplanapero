@@ -94,8 +94,8 @@ export default function PlanPage() {
       <Layout>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#fff' }}>Meal Plan</h1>
-            <p className="text-sm mt-1" style={{ color: '#666' }}>Weekly meal schedule</p>
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Meal Plan</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>Weekly meal schedule</p>
           </div>
           <button
             onClick={handleRegenerate}
@@ -120,7 +120,7 @@ export default function PlanPage() {
           />
         ) : (
           <div className="text-center py-16">
-            <p className="text-sm mb-4" style={{ color: '#666' }}>No meal plan generated yet.</p>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>No meal plan generated yet.</p>
             <button onClick={generatePlan} disabled={generating} className="btn-primary px-8 py-3 text-base">
               {generating ? 'Generating...' : 'Generate Plan'}
             </button>
