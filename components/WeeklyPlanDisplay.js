@@ -18,7 +18,7 @@ const PROTEIN_STYLES = {
 async function fetchPlanData(planId) {
   const { data: meals } = await supabase
     .from('plan_meals')
-    .select('*, recipes(id, title, servings_base, protein_type, effort_level)')
+    .select('*, recipes(id, title, servings_base, protein_type, effort_level, total_time_min)')
     .eq('plan_id', planId)
     .order('day_of_week')
 
@@ -84,7 +84,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
       .from('plan_meals')
       .update({ recipe_id: newRecipeId })
       .eq('id', mealId)
-      .select('*, recipes(id, title, servings_base, protein_type, effort_level)')
+      .select('*, recipes(id, title, servings_base, protein_type, effort_level, total_time_min)')
       .single()
 
     if (error || !updated) return
@@ -257,6 +257,11 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                             {meal.recipes && (
                               <span className="text-[10px] mt-1 block" style={{ color: ps.text }}>
                                 {meal.recipes.protein_type} · {meal.recipes.effort_level || '?'}
+                              </span>
+                            )}
+                            {meal.recipes?.total_time_min && (
+                              <span className="text-[10px] block" style={{ color: '#666' }}>
+                                {meal.recipes.total_time_min} min
                               </span>
                             )}
                             <span className="text-[10px] block" style={{ color: '#666' }}>
