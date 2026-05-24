@@ -248,12 +248,12 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                               {meal.recipes ? meal.recipes.title : 'Empty'}
                             </span>
                             {meal.recipes && <span className="text-[10px] block" style={{ color: ps.text }}>{meal.recipes.protein_type} · {meal.recipes.effort_level || '?'}</span>}
-                            {meal.recipes?.total_time_min && <span className="text-[10px] block" style={{ color: '#666' }}>{meal.recipes.total_time_min} min</span>}
-                            <span className="text-[10px] block" style={{ color: '#666' }}>×{meal.servings}</span>
-                            {meal.recipe_id && (
-                              <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5 hover:underline truncate"
-                                style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
-                            )}
+                            <span className="text-[10px] flex items-center gap-1" style={{ color: '#666' }}>
+                              {meal.recipes?.total_time_min ? <span>({meal.recipes.total_time_min}&apos;)</span> : null}
+                              {meal.recipe_id && (
+                                <a href={`/recipes/view?id=${meal.recipe_id}`} className="hover:underline" style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
+                              )}
+                            </span>
                           </>
                         )}
                       </div>
@@ -290,11 +290,13 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                       style={{ background: ps.bg, borderColor: ps.border }}
                       onClick={() => handleSelectRecipe(meal)}>
                       <span className="text-[11px] font-medium block truncate" style={{ color: '#fff' }}>{meal.recipes?.title || 'Empty'}</span>
-                      {meal.recipes?.total_time_min && <span className="text-[10px] block" style={{ color: '#666' }}>{meal.recipes.total_time_min} min</span>}
-                      <span className="text-[10px] block" style={{ color: ps.text }}>{meal.recipes?.protein_type} ×{meal.servings}</span>
-                      {meal.recipe_id && (
-                        <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5" style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
-                      )}
+                      <span className="text-[10px] block" style={{ color: ps.text }}>{meal.recipes?.protein_type || ''}</span>
+                      <span className="text-[10px] flex items-center gap-1" style={{ color: '#666' }}>
+                        {meal.recipes?.total_time_min ? <span>({meal.recipes.total_time_min}&apos;)</span> : null}
+                        {meal.recipe_id && (
+                          <a href={`/recipes/view?id=${meal.recipe_id}`} className="hover:underline" style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
+                        )}
+                      </span>
                     </div>
                   )
                 })}
