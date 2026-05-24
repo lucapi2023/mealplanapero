@@ -45,31 +45,56 @@ export default function GroceryList({ ingredients, onClose }) {
   }
 
   const handleExportReminders = (platform) => {
-    const now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MealPlan//Shopping//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Shopping List']
-    ingredients.sort((a, b) => a.name.localeCompare(b.name)).forEach(ing => {
+    const now = new Date()
+    const stamp = now.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+    const tomorrow = new Date(now.getTime() + 86400000).toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z'
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//MealPlan//Shopping//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:Shopping List',
+    ]
+    ingredients.sort((a, b) => a.name.localeCompare(b.name)).forEach((ing, i) => {
       const summary = `${ing.name} - ${Math.round(ing.amount * 100) / 100} ${ing.unit}`
-      const cat = getCategory(ing.name)
+      const uid = `mealplan-${i}-${Date.now()}`
       lines.push('BEGIN:VTODO')
-      lines.push(`CREATED:${now}`)
-      lines.push(`DTSTART:${now}`)
+      lines.push(`UID:${uid}`)
+      lines.push(`DTSTAMP:${stamp}`)
+      lines.push(`CREATED:${stamp}`)
+      lines.push(`DUE;VALUE=DATE:${tomorrow.slice(0, 8)}`)
       lines.push(`SUMMARY:${summary}`)
-      lines.push(`DESCRIPTION:Category: ${cat}`)
       lines.push('STATUS:NEEDS-ACTION')
       lines.push('PRIORITY:0')
       lines.push('END:VTODO')
     })
     lines.push('END:VCALENDAR')
+
     const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'mealplan-shopping.ics'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    const url = URL.createObjectURL(blob)
+
+    if (platform === 'apple' && navigator.share) {
+      const file = new File([blob], 'mealplan-shopping.ics', { type: 'text/calendar' })
+      navigator.share({ files: [file], title: 'Shopping List' }).catch(() => {
+        const a = document.createElement('a'); a.href = url; a.download = 'mealplan-shopping.ics'
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      })
+    } else {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'mealplan-shopping.ics'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+
     setExportType(null)
     if (platform === 'android') {
-      setTimeout(() => alert('File downloaded. Open with Google Tasks, TickTick, or any .ics-compatible app.'), 300)
+      setTimeout(() => alert('Downloaded! Open with Google Tasks or any .ics-compatible app.'), 300)
+    } else if (platform === 'apple') {
+      setTimeout(() => alert('Downloaded! On iPhone/iPad: open the file in Files app, tap it to import into Reminders. On Mac: double-click the .ics file.'), 300)
     }
   }
 

@@ -163,7 +163,8 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
 
       {showGrocery && <GroceryList ingredients={Object.values(aggregated)} onClose={() => setShowGrocery(false)} />}
 
-      <div className="overflow-x-auto">
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full" style={{ borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -185,21 +186,19 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                   const meal = grid[d]?.[mt]
                   if (!meal) return (
                     <td key={d} className="py-1 px-2">
-                      <div className="h-16 rounded border border-dashed" style={{ borderColor: '#2A2A2A' }}></div>
+                      <div className="h-20 rounded border border-dashed" style={{ borderColor: 'var(--border)' }}></div>
                     </td>
                   )
-
                   const ps = meal.recipes ? (PROTEIN_STYLES[meal.recipes.protein_type] || PROTEIN_STYLES.any) : PROTEIN_STYLES.any
-
                   return (
                     <td key={d} className="py-1 px-2 align-top relative" style={{ width: `${100 / (days.length + 1)}%` }}>
-                      <div className="rounded-lg border p-2 cursor-pointer hover:border-[#3A3A3A] transition-colors h-16"
+                      <div className="rounded-lg border p-2 cursor-pointer hover:border-[#3A3A3A] transition-colors h-20 flex flex-col justify-center"
                         style={{ background: ps.bg, borderColor: ps.border }}
                         onClick={() => handleSelectRecipe(meal)}>
                         {selecting === meal.id ? (
                           <div className="fixed inset-0 z-50 flex items-start justify-center pt-20" style={{ background: 'rgba(0,0,0,0.5)' }}
                             onClick={() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }}>
-                            <div className="rounded-lg border shadow-2xl p-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', width: '360px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                            <div className="rounded-lg border shadow-2xl p-3 mx-4" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', width: '100%', maxWidth: '380px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                               onClick={e => e.stopPropagation()}>
                               <input
                                 className="w-full text-sm rounded px-3 py-2 mb-2 flex-shrink-0"
@@ -211,7 +210,7 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                               />
                               <div className="overflow-y-auto flex-1" style={{ maxHeight: '50vh' }}>
                                 {loadingRecipes ? (
-                                  <div className="px-2 py-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading recipes...</div>
+                                  <div className="px-2 py-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading...</div>
                                 ) : (() => {
                                   const search = recipeSearch.toLowerCase()
                                   const filtered = available.filter(r => r.title.toLowerCase().includes(search))
@@ -222,23 +221,17 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                                       <div className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
                                         style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border)' }}
                                         onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}>
-                                        Keep current: {meal.recipes?.title || ''}
+                                        Keep: {meal.recipes?.title || ''}
                                       </div>
-                                      {matching.length > 0 && (
-                                        <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>Matching type ({matching.length})</div>
-                                      )}
+                                      {matching.length > 0 && <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>Matching ({matching.length})</div>}
                                       {matching.map(r => (
                                         <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
-                                          style={{ color: 'var(--text-primary)' }}
-                                          onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                                          style={{ color: 'var(--text-primary)' }} onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
                                       ))}
-                                      {others.length > 0 && (
-                                        <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Other recipes ({others.length})</div>
-                                      )}
+                                      {others.length > 0 && <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Other ({others.length})</div>}
                                       {others.map(r => (
                                         <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
-                                          style={{ color: 'var(--text-secondary)' }}
-                                          onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                                          style={{ color: 'var(--text-secondary)' }} onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
                                       ))}
                                       {!loadingRecipes && filtered.length === 0 && recipeSearch && (
                                         <div className="px-2 py-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>No matches</div>
@@ -252,26 +245,14 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                         ) : (
                           <>
                             <span className="text-xs font-medium block truncate" style={{ color: '#fff' }}>
-                              {meal.recipes ? meal.recipes.title : 'No recipe'}
+                              {meal.recipes ? meal.recipes.title : 'Empty'}
                             </span>
-                            {meal.recipes && (
-                              <span className="text-[10px] mt-1 block" style={{ color: ps.text }}>
-                                {meal.recipes.protein_type} · {meal.recipes.effort_level || '?'}
-                              </span>
-                            )}
-                            {meal.recipes?.total_time_min && (
-                              <span className="text-[10px] block" style={{ color: '#666' }}>
-                                {meal.recipes.total_time_min} min
-                              </span>
-                            )}
-                            <span className="text-[10px] block" style={{ color: '#666' }}>
-                              ×{meal.servings}
-                            </span>
+                            {meal.recipes && <span className="text-[10px] block" style={{ color: ps.text }}>{meal.recipes.protein_type} · {meal.recipes.effort_level || '?'}</span>}
+                            {meal.recipes?.total_time_min && <span className="text-[10px] block" style={{ color: '#666' }}>{meal.recipes.total_time_min} min</span>}
+                            <span className="text-[10px] block" style={{ color: '#666' }}>×{meal.servings}</span>
                             {meal.recipe_id && (
-                              <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5 hover:underline"
-                                style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>
-                                View recipe →
-                              </a>
+                              <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5 hover:underline truncate"
+                                style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
                             )}
                           </>
                         )}
@@ -283,6 +264,89 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card layout */}
+      <div className="md:hidden space-y-3">
+        {days.map(d => {
+          const lunch = grid[d]?.lunch
+          const dinner = grid[d]?.dinner
+          if (!lunch && !dinner) return null
+          return (
+            <div key={d} className="card py-3 px-4">
+              <h3 className="text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{DAYS[d] || d}</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {['lunch', 'dinner'].map(mt => {
+                  const meal = grid[d]?.[mt]
+                  if (!meal) return (
+                    <div key={mt} className="rounded-lg border border-dashed p-2 text-center" style={{ borderColor: 'var(--border)' }}>
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{mt === 'lunch' ? 'Lunch' : 'Dinner'}</span>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>—</p>
+                    </div>
+                  )
+                  const ps = meal.recipes ? (PROTEIN_STYLES[meal.recipes.protein_type] || PROTEIN_STYLES.any) : PROTEIN_STYLES.any
+                  return (
+                    <div key={mt} className="rounded-lg border p-2 cursor-pointer transition-colors"
+                      style={{ background: ps.bg, borderColor: ps.border }}
+                      onClick={() => handleSelectRecipe(meal)}>
+                      <span className="text-[11px] font-medium block truncate" style={{ color: '#fff' }}>{meal.recipes?.title || 'Empty'}</span>
+                      {meal.recipes?.total_time_min && <span className="text-[10px] block" style={{ color: '#666' }}>{meal.recipes.total_time_min} min</span>}
+                      <span className="text-[10px] block" style={{ color: ps.text }}>{meal.recipes?.protein_type} ×{meal.servings}</span>
+                      {meal.recipe_id && (
+                        <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5" style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>View →</a>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Modal overlay for mobile too */}
+              {selecting && (grid[d]?.lunch?.id === selecting || grid[d]?.dinner?.id === selecting) && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-20" style={{ background: 'rgba(0,0,0,0.5)' }}
+                  onClick={() => { setSelecting(null); setAvailable([]); setRecipeSearch('') }}>
+                  <div className="rounded-lg border shadow-2xl p-3 mx-4" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', width: '100%', maxWidth: '380px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                    onClick={e => e.stopPropagation()}>
+                    <input
+                      className="w-full text-sm rounded px-3 py-2 mb-2 flex-shrink-0"
+                      style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                      placeholder="Search recipes..."
+                      value={recipeSearch}
+                      onChange={e => setRecipeSearch(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="overflow-y-auto flex-1" style={{ maxHeight: '50vh' }}>
+                      {loadingRecipes ? (
+                        <div className="px-2 py-3 text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading...</div>
+                      ) : (() => {
+                        const search = recipeSearch.toLowerCase()
+                        const filtered = available.filter(r => r.title.toLowerCase().includes(search))
+                        const matching = filtered.filter(r => r.group === 'match')
+                        const others = filtered.filter(r => r.group === 'other')
+                        const meal = grid[d]?.lunch?.id === selecting ? grid[d]?.lunch : grid[d]?.dinner
+                        return (
+                          <>
+                            <div className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                              style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border)' }}
+                              onMouseDown={() => handleSwapRecipe(meal.id, meal.recipe_id)}>Keep current</div>
+                            {matching.length > 0 && <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>Matching ({matching.length})</div>}
+                            {matching.map(r => (
+                              <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                                style={{ color: 'var(--text-primary)' }} onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                            ))}
+                            {others.length > 0 && <div className="px-2 py-1 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Other ({others.length})</div>}
+                            {others.map(r => (
+                              <div key={r.id} className="px-2 py-2 text-sm cursor-pointer rounded hover:bg-[var(--bg-hover)]"
+                                style={{ color: 'var(--text-secondary)' }} onMouseDown={() => handleSwapRecipe(meal.id, r.id)}>{r.title}</div>
+                            ))}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t" style={{ borderColor: '#2A2A2A' }}>
