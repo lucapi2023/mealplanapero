@@ -267,6 +267,12 @@ export default function WeeklyPlanDisplay({ planId, weekStartDate, onRefresh }) 
                             <span className="text-[10px] block" style={{ color: '#666' }}>
                               ×{meal.servings}
                             </span>
+                            {meal.recipe_id && (
+                              <a href={`/recipes/view?id=${meal.recipe_id}`} className="text-[10px] block mt-0.5 hover:underline"
+                                style={{ color: 'var(--accent)' }} onClick={e => e.stopPropagation()}>
+                                View recipe →
+                              </a>
+                            )}
                           </>
                         )}
                       </div>

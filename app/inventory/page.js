@@ -26,7 +26,6 @@ export default function InventoryPage() {
       .from('inventory')
       .select('id, quantity, unit, ingredients(name, id)')
       .eq('household_id', household.id)
-      .order('created_at', { ascending: false })
     if (data) setItems(data.map(item => ({
       id: item.id, name: item.ingredients?.name || 'Unknown',
       ingredient_id: item.ingredients?.id, quantity: item.quantity, unit: item.unit,

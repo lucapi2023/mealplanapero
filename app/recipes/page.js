@@ -208,6 +208,9 @@ export default function RecipesPage() {
                     <Link href={`/recipes/new?id=${recipe.id}`} className="text-xs font-medium hover:underline" style={{ color: '#929292' }}>
                       Edit
                     </Link>
+                    <Link href={`/recipes/view?id=${recipe.id}`} className="text-xs font-medium hover:underline" style={{ color: 'var(--accent)' }}>
+                      View
+                    </Link>
                     <button onClick={() => handleDelete(recipe.id)} className="text-xs font-medium hover:underline" style={{ color: '#FCA5A5' }}>
                       Delete
                     </button>
